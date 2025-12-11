@@ -1,10 +1,14 @@
+# Simple processor emulator
 
-# ASM description
+This simple processor emulator is intended to help create and test own ISA for 
+Chapter 1 exercises in 'Basic Computer Architecture' by Smruti R Sarangi.
+
+## ASM description
 Description of assembly language for simple emulated processor
 
 ```
 # This is a comment
-# There are eight registers in emulated processor: r0 ... r7
+# There are four registers in emulated processor: r0 ... r4
 #
 # Simple program:
 load r0 5       # Loads into register 0 the value 5
