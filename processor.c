@@ -44,7 +44,8 @@ void add_reg(struct Processor* p){
 
 /* Jumps to address or named label, ex: jmp 3; jmp my_label*/
 void jmp(struct Processor* p) {
-	p->pc = mem_pci(p);
+	unsigned char new_pc = mem_pci(p);
+	p->pc = new_pc;
 }
 
 void jnz(struct Processor* p) {}

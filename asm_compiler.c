@@ -7,10 +7,14 @@
 #include <string.h>
 #include <limits.h>
 
+#define T char
+#include "vector.h"
+#undef T
+
 #define MAX_COMMAND_LEN 5
 #define COMPILE_ERROR -1
 
-char* compile_program(const char *file_name, size_t *program_len);
+int compile_program(const char *file_name, struct vec_char *program);
 
 /* Translated one line of assembly into machine instructions
  * The line is expected to be in format either:
@@ -20,7 +24,7 @@ char* compile_program(const char *file_name, size_t *program_len);
  * Returns the number of written instructions + arguments into `out program`
  * `line_num` is for compile error reporting
  * */
-int translate_line(const char *line_text, size_t len, char *out_program, int free_pos, int line_num);
+int translate_line(const char *line_text, size_t len, struct vec_char *out_program, int line_num);
 
 /* Returns InstructionArgType and writes value int `out_value`
  * is type is not `NONE`
@@ -61,52 +65,32 @@ struct LabelEntry {
 	unsigned char point_location;
 };
 
-char* compile_program(const char *file_name, size_t *program_len)
+int compile_program(const char *file_name, struct vec_char *program)
 {
 	FILE *f = fopen(file_name, "r");
 	if(!f){
-		return NULL;
+		printf("ERROR: failed to open file %s\n", file_name);
+		return COMPILE_ERROR;
 	}
 	
-	// Allocate pointers for first three lines of program
-	int program_mem_len = 3;
-	char *program = (char*)malloc(*program_len * sizeof(char));
-	if(!program) {
-		fprintf(stderr, "Filed to allocate memory for a program\n");
-		return NULL;
-	}
-
-	int free_pos = 0;
+	int status = 0;
 	char *line = NULL;
 	size_t n;
 	ssize_t nread;
 	int line_num = 0;
 
-	while((nread = getline(&line, &n, f)) != -1)
-	{
-		free_pos += translate_line(line, nread, program, free_pos, ++line_num);
+        while ((nread = getline(&line, &n, f)) != -1 &&
+               (status = translate_line(line, nread, program, ++line_num)) !=
+                   COMPILE_ERROR)
+          ;
 
-		if(free_pos == -1) // Error occured
-			break;
-
-		if(free_pos >= program_mem_len) {
-			program_mem_len = free_pos * 2;
-			program = realloc(program, program_mem_len);
-			if(!program){
-				fprintf(stderr, "Filed to reallocate memory for a program\n");
-				return NULL;
-			}
-		}
-	}
-	*program_len = free_pos;
-
-	free(line);
+        free(line);
 	fclose(f);
 
-	return program;
+	return status;
 }
 
-int translate_line(const char *line, size_t line_len, char *out_program, int free_pos, int line_num)
+int translate_line(const char *line, size_t line_len, struct vec_char *out_program, int line_num)
 {
 	int written = 0;
 	const char *curr_pos = line;
@@ -157,9 +141,9 @@ int translate_line(const char *line, size_t line_len, char *out_program, int fre
 		return COMPILE_ERROR;
 	}
 
-	out_program[free_pos++] = inst_info->code;
+	vec_push_back_char(out_program, inst_info->code);
 	for(int i = 0; i < inst_info->args_num; ++i){
-		out_program[free_pos++] = arg_values[i];
+		vec_push_back_char(out_program, arg_values[i]);
 	}
 
 	written += inst_info->args_num + 1;

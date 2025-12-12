@@ -10,7 +10,11 @@
 
 #include "processor.h"
 
-char* compile_program(const char *file_name, size_t *program_len);
+#define T char
+#include "vector.h"
+#undef T
+
+int compile_program(const char *file_name, struct vec_char *program);
 void print_processor(const struct Processor *p);
 
 int main(int argc, char *argv[])
@@ -19,22 +23,30 @@ int main(int argc, char *argv[])
 	if(argc < 2){
 		printf("Usage: emulator.out <program.asm>\n");
 	}
-	size_t program_len = 0;
-	char *program = compile_program(argv[1], &program_len);
-	printf("Program len: %lu\n", program_len);
 
-	for(size_t i = 0; i < program_len; ++i) {
-		printf("%d|", (unsigned char)program[i]);
+	struct vec_char program;
+	vec_init_char(&program);
+
+	int status = compile_program(argv[1], &program);
+	if(status == -1){/*TODO: place COMPILE_ERROR in accessible place*/
+		printf("Compilation failed\n");
+		return 1;
+	}
+
+	printf("Program len: %lu\n", program.size);
+
+	for(size_t i = 0; i < program.size; ++i) {
+		printf("%d|", (unsigned char)program.data[i]);
 	}
 	printf("\n");
 
 	struct Processor p;
 	
-	run_program(program, program_len, &p);
+	run_program(program.data, program.size, &p);
 
 	print_processor(&p);
 
-	free(program);
+	vec_free_char(&program);
 
 	return 0;
 }
