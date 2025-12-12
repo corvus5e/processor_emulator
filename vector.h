@@ -27,14 +27,38 @@ struct vec(T) {
 	size_t capacity;
 };
 
+static inline
+T* JOIN(vec_at_, T)(struct vec(T) * v, size_t index) {
+	return &v->data[index];
+}
 
-T* JOIN(vec_at_, T)(struct vec(T) * v, size_t index);
+static inline
+void JOIN(vec_reserve_, T)(struct vec(T) * v, int size) {
+	if (size != 0 && v->capacity < size) {
+		v->data = (T *)realloc(v->data, sizeof(T) * size);
+		v->capacity = size;
+	}
+}
 
-void JOIN(vec_reserve_, T)(struct vec(T) * v, int size);
+static inline
+void JOIN(vec_init_, T)(struct vec(T) * v) {
+	v->size = v->capacity = 0;
+	v->data = NULL;
+}
 
-void JOIN(vec_init_, T)(struct vec(T) * v);
+static inline
+void JOIN(vec_free_, T)(struct vec(T) * v) {
+	free(v->data);
+	v->size = v->capacity = 0;
+}
 
-void JOIN(vec_free_, T)(struct vec(T) * v);
+static inline
+void JOIN(vec_push_back_, T)(struct vec(T) * v, T value) {
+	if (v->size == v->capacity) {
+		JOIN(vec_reserve_, T)(v, v->capacity == 0 ? 1 : v->capacity * 2);
+	}
+	*JOIN(vec_at_, T)(v, v->size) = value;
+	v->size += 1;
+}
 
-void JOIN(vec_push_back_, T)(struct vec(T) * v, T value);
 

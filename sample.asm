@@ -1,5 +1,5 @@
 # Simple program
-#my_label:
+my_label:
 load r0 6
 load r1 @r0
 #load r1 @5

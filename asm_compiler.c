@@ -16,13 +16,18 @@
 
 int compile_program(const char *file_name, struct vec_char *program);
 
+struct LabelEntry {
+	char *name;
+	unsigned char declaration_location;
+	unsigned char point_location;
+};
+
 /* Translated one line of assembly into machine instructions
  * The line is expected to be in format either:
  * `label_name:` or
  * `<command> [args1 [arg2]]`
  * and writes them into `out_program` starting from `free_pos`
  * Returns the number of written instructions + arguments into `out program`
- * `line_num` is for compile error reporting
  * */
 int translate_line(const char *line_text, size_t len, struct vec_char *out_program, int line_num);
 
@@ -58,12 +63,6 @@ void print_compile_error(const char *msr, int line_num, const char *word, size_t
 
 /* --- Implementation ---- */
 
-struct LabelEntry {
-	char *name;
-	size_t length;
-	unsigned char declaration_location;
-	unsigned char point_location;
-};
 
 int compile_program(const char *file_name, struct vec_char *program)
 {
