@@ -33,6 +33,11 @@ T* JOIN(vec_at_, T)(struct vec(T) * v, size_t index) {
 }
 
 static inline
+T* JOIN(vec_back_, T)(struct vec(T) * v) {
+	return &v->data[v->size - 1];
+}
+
+static inline
 void JOIN(vec_reserve_, T)(struct vec(T) * v, int size) {
 	if (size != 0 && v->capacity < size) {
 		v->data = (T *)realloc(v->data, sizeof(T) * size);

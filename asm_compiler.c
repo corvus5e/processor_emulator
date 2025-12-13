@@ -14,13 +14,17 @@
 #define MAX_COMMAND_LEN 5
 #define COMPILE_ERROR -1
 
-int compile_program(const char *file_name, struct vec_char *program);
-
-struct LabelEntry {
+typedef struct LabelEntry {
 	char *name;
-	unsigned char declaration_location;
-	unsigned char point_location;
-};
+	int declaration_location;
+	int point_location;
+} LabelEntry;
+
+#define T LabelEntry
+#include "vector.h"
+#undef T
+
+int compile_program(const char *file_name, struct vec_char *program);
 
 /* Translated one line of assembly into machine instructions
  * The line is expected to be in format either:
@@ -29,7 +33,7 @@ struct LabelEntry {
  * and writes them into `out_program` starting from `free_pos`
  * Returns the number of written instructions + arguments into `out program`
  * */
-int translate_line(const char *line_text, size_t len, struct vec_char *out_program, int line_num);
+int translate_line(const char *line_text, size_t len, struct vec_LabelEntry *label_table, struct vec_char *out_program, int line_num);
 
 /* Returns InstructionArgType and writes value int `out_value`
  * is type is not `NONE`
@@ -46,6 +50,8 @@ int find_word(const char *text, const char **word_begin);
  * if zero value passed into `search_type`, `arg_types` is not participated in search
  * */
 struct InstructionInfo* find_instruction_info(const char *instuction, size_t len, int search_type, enum InstructionArgType arg_types);
+
+LabelEntry* add_label(const char *name, size_t len, struct vec_LabelEntry *label_table, int declaration_location);
 
 /* Converts `n` chars of string `s` to a number that fits char
  * Returns 1 is succeed to convert and stores result in `out`,
@@ -77,19 +83,26 @@ int compile_program(const char *file_name, struct vec_char *program)
 	size_t n;
 	ssize_t nread;
 	int line_num = 0;
+	struct vec_LabelEntry label_table;
+	vec_init_LabelEntry(&label_table);
 
         while ((nread = getline(&line, &n, f)) != -1 &&
-               (status = translate_line(line, nread, program, ++line_num)) !=
+               (status = translate_line(line, nread, &label_table, program, ++line_num)) !=
                    COMPILE_ERROR)
           ;
 
         free(line);
 	fclose(f);
 
+	for(int i =0; i < label_table.size; ++i) {
+		LabelEntry *l = vec_at_LabelEntry(&label_table, i);
+		printf("Label: %s %d %d\n", l->name, l->declaration_location, l->point_location);
+	}
+
 	return status;
 }
 
-int translate_line(const char *line, size_t line_len, struct vec_char *out_program, int line_num)
+int translate_line(const char *line, size_t line_len, struct vec_LabelEntry *label_table, struct vec_char *out_program, int line_num)
 {
 	int written = 0;
 	const char *curr_pos = line;
@@ -100,7 +113,8 @@ int translate_line(const char *line, size_t line_len, struct vec_char *out_progr
 		return 0;
 
 	if(word[word_len-1] == ':'){ // This is a label, like `foo:`
-		//TODO: handle_label();
+		if(!add_label(word, word_len - 1, label_table, out_program->size))
+			return COMPILE_ERROR;
 		return 0;
 	}
 
@@ -223,6 +237,24 @@ struct InstructionInfo* find_instruction_info(const char *instuction, size_t len
         }
 
 	return NULL;
+}
+
+LabelEntry* add_label(const char *name, size_t len, struct vec_LabelEntry *label_table, int declaration_location) {
+	//TODO: check for duplicates
+	LabelEntry entry;
+	entry.name = (char*)malloc((len + 1) * sizeof(char));
+	if(!entry.name) {
+		return NULL;
+	}
+
+	strncpy(entry.name, name, len);
+	entry.name[len] = '\0';
+	entry.declaration_location = declaration_location;
+	entry.point_location = -1;
+
+	vec_push_back_LabelEntry(label_table, entry);
+
+	return vec_back_LabelEntry(label_table);
 }
 
 void printn(const char *s, size_t n) {
