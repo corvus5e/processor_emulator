@@ -13,43 +13,50 @@
 
 /* loads into register immediate value, ex: `load r0 5` */
 void load_im(struct Processor* p){
-	unsigned char reg_number = mem_pci(p);
+	int reg_number = mem_pci(p);
 	p->reg[reg_number] = mem_pci(p);
 }
 
 /* loads into register from address value, ex: `load r0 @5`*/
 void load_at_im(struct Processor* p){
-	unsigned char reg_number = mem_pci(p);
+	int reg_number = mem_pci(p);
 	p->reg[reg_number] = mem_apci(p);
 }
 
 /* loads into register from address from register, ex: `load r1 @r0` */
 void load_at_reg(struct Processor* p){
-	unsigned char reg_number_a = mem_pci(p);
-	unsigned char reg_number_b = mem_pci(p);
+	int reg_number_a = mem_pci(p);
+	int reg_number_b = mem_pci(p);
 	p->reg[reg_number_a] = mem_areg(p, reg_number_b);
 }
 
 /* Adds to a register immediate value, ex: `add r0 5` */
 void add_im(struct Processor* p){
-	unsigned char reg_number = mem_pci(p);
+	int reg_number = mem_pci(p);
 	p->reg[reg_number] += mem_pci(p);
 }
 
 /* Adds to a register value of another register, ex: `add r0 r1` */
 void add_reg(struct Processor* p){
-	unsigned char reg_number_a = mem_pci(p);
-	unsigned char reg_number_b = mem_pci(p);
+	int reg_number_a = mem_pci(p);
+	int reg_number_b = mem_pci(p);
 	p->reg[reg_number_a] += p->reg[reg_number_b];
 }
 
-/* Jumps to address or named label, ex: jmp 3; jmp my_label*/
+/* Jumps to a named label (label should be replaced by address) ex: jmp my_label*/
 void jmp(struct Processor* p) {
-	unsigned char new_pc = mem_pci(p);
-	p->pc = new_pc;
+	int address = mem_pci(p);
+	p->pc = address;
 }
 
-void jnz(struct Processor* p) {}
+/* Jumps to named label if register is non-zero, ex: jnz r0 my_label*/
+void jnz(struct Processor* p) {
+	int reg_number = mem_pci(p);
+	int address = mem_pci(p);
+	if(p->reg[reg_number]){
+		p->pc = address;
+	}
+}
 
 typedef void(*InstructionFunc)(struct Processor*);
 
@@ -60,19 +67,20 @@ static InstructionFunc _asm_funcs[] = {
 	add_im,
 	add_reg,
 	jmp,
-	jnz
+	jnz,
 };
 
+#define INSTRUCTIONS_COUNT sizeof(_asm_funcs)/sizeof(InstructionFunc)
 #define EXIT_PROGRAM 127
 
 static struct InstructionInfo _asm_info[] = {
 	{"load", 2, REGISTER|IMMEDIATE,    0}, // load_im
 	{"load", 2, REGISTER|AT_IMMEDIATE, 1}, // load_at_im
 	{"load", 2, REGISTER|AT_REGISTER,  2}, // load_at_reg
-	{"add",  2, REGISTER|IMMEDIATE,    3},
-	{"add",  2, REGISTER|REGISTER,     4},
-	{"jmp",  1, LOCATION,              5},
-	{"jnz",  2, REGISTER|LOCATION,     6},
+	{"add",  2, REGISTER|IMMEDIATE,    3}, // add_im
+	{"add",  2, REGISTER|REGISTER,     4}, // add_reg
+	{"jmp",  1, LOCATION,              5}, // jmp
+	{"jnz",  2, REGISTER|LOCATION,     6}, // jzn
 	{"exit", 0, NONE,       EXIT_PROGRAM},
 };
 
@@ -101,7 +109,7 @@ int run_program(char *program, size_t len, struct Processor * const p) {
 	unsigned char fn;
 	while((fn = p->mem[p->pc++]) != EXIT_PROGRAM) {
 		//decode
-		if(fn > 4) {
+		if(fn > INSTRUCTIONS_COUNT - 1) {
 			printf("INT: Unknow instruction %u\n", fn);
 			return 1;
 		}

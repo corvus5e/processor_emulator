@@ -16,8 +16,8 @@
 
 typedef struct LabelEntry {
 	char *name;
-	int declaration_location;
-	int point_location;
+	int location;
+	struct vec_char jumps; /* exact positions in compiled code where label is used */
 } LabelEntry;
 
 #define T LabelEntry
@@ -51,7 +51,10 @@ int find_word(const char *text, const char **word_begin);
  * */
 struct InstructionInfo* find_instruction_info(const char *instuction, size_t len, int search_type, enum InstructionArgType arg_types);
 
-LabelEntry* add_label(const char *name, size_t len, struct vec_LabelEntry *label_table, int declaration_location);
+/* Tries to add label into the `label_table`.
+ * On success returns pointer to newly added entry, otherwise returns NULL.
+ * */
+LabelEntry* add_label(const char *name, size_t len, struct vec_LabelEntry *label_table, int location);
 
 /* Converts `n` chars of string `s` to a number that fits char
  * Returns 1 is succeed to convert and stores result in `out`,
@@ -96,7 +99,7 @@ int compile_program(const char *file_name, struct vec_char *program)
 
 	for(int i =0; i < label_table.size; ++i) {
 		LabelEntry *l = vec_at_LabelEntry(&label_table, i);
-		printf("Label: %s %d %d\n", l->name, l->declaration_location, l->point_location);
+		printf("Label: %s %d\n", l->name, l->location);
 	}
 
 	return status;
@@ -186,6 +189,10 @@ enum InstructionArgType translate_argument(const char *arg, size_t len, char* ou
 		return IMMEDIATE;
 	}
 
+	if(len > 0 && isalpha(arg[0])) {
+		return LOCATION;
+	}
+
 	return NONE;
 }
 
@@ -239,7 +246,7 @@ struct InstructionInfo* find_instruction_info(const char *instuction, size_t len
 	return NULL;
 }
 
-LabelEntry* add_label(const char *name, size_t len, struct vec_LabelEntry *label_table, int declaration_location) {
+LabelEntry* add_label(const char *name, size_t len, struct vec_LabelEntry *label_table, int location) {
 	//TODO: check for duplicates
 	LabelEntry entry;
 	entry.name = (char*)malloc((len + 1) * sizeof(char));
@@ -249,8 +256,8 @@ LabelEntry* add_label(const char *name, size_t len, struct vec_LabelEntry *label
 
 	strncpy(entry.name, name, len);
 	entry.name[len] = '\0';
-	entry.declaration_location = declaration_location;
-	entry.point_location = -1;
+	entry.location = location;
+	vec_init_char(&entry.jumps);
 
 	vec_push_back_LabelEntry(label_table, entry);
 
