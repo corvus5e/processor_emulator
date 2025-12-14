@@ -12,8 +12,11 @@ $(TARGET): $(OBJS)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+SAMPLE := ex_7.asm
+#SAMPLE := sample.asm
+
 run:
-	./emulator.out sample.asm
+	./emulator.out asm_samples/$(SAMPLE)
 
 debug:
 	lldb emulator.out -- sample.asm

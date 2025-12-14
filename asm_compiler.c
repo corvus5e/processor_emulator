@@ -12,6 +12,7 @@
 #undef T
 
 #define MAX_COMMAND_LEN 5
+#define MAX_ARGS 10 //TODO: Make dynamic later
 #define COMPILE_ERROR -1
 
 typedef struct LabelEntry {
@@ -110,7 +111,7 @@ int compile_program(const char *file_name, struct vec_char *program)
         free(line);
 	fclose(f);
 
-	print_label_table(&label_table);
+	//print_label_table(&label_table);
 
 	return resolve_labels(program, &label_table) == 1 ? 0 : COMPILE_ERROR;
 }
@@ -148,7 +149,7 @@ int translate_line(const char *line, size_t line_len, struct vec_LabelEntry *lab
 
 	// Pasre arguments
 	enum InstructionArgType args_types = NONE;
-	char arg_values[2]; // We have no more that two values for now
+	char arg_values[MAX_ARGS];
 	for(int i = 0; i < inst_info->args_num; ++i) {
 		word_len = find_word(&curr_pos, &word);
 		if(word_len == 0) {

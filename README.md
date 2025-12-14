@@ -1,10 +1,11 @@
 # Simple processor emulator
 
-This simple processor emulator is intended to help create and test own ISA for 
+This simple processor emulator is intended to help create and test own ISA for  
 Chapter 1 exercises in 'Basic Computer Architecture' by Smruti R Sarangi.
 
-## ASM description
-Description of assembly language for simple emulated processor
+## Built in ASM description
+Description of already implemented assembly language for simple emulated processor
+ISA is described and implemented in processor.c. It could be edited to create own ISA.
 
 ```
 # This is a comment

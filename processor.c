@@ -72,6 +72,26 @@ void jnz(struct Processor* p) {
 	}
 }
 
+void sbn_im(struct Processor* p) {
+	int reg_number = mem_pci(p);
+	p->reg[reg_number] -= mem_pci(p);
+	int jump_addr = mem_pci(p);
+	if(p->reg[reg_number] < 0) {
+		p->pc = jump_addr;
+	}
+}
+
+void sbn_reg(struct Processor* p) {
+	int reg_number_a = mem_pci(p);
+	int reg_number_b = mem_pci(p);
+	p->reg[reg_number_a] -= p->reg[reg_number_b];
+	int jump_addr = mem_pci(p);
+	if(p->reg[reg_number_a] < 0) {
+		p->pc = jump_addr;
+	}
+}
+
+
 typedef void(*InstructionFunc)(struct Processor*);
 
 static InstructionFunc _asm_funcs[] = {
@@ -84,10 +104,12 @@ static InstructionFunc _asm_funcs[] = {
 	sub_reg,
 	jmp,
 	jnz,
+	sbn_im,
+	sbn_reg
 };
 
 #define INSTRUCTIONS_COUNT sizeof(_asm_funcs)/sizeof(InstructionFunc)
-#define EXIT_PROGRAM 127
+#define EXIT_PROGRAM -1
 
 static struct InstructionInfo _asm_info[] = {
 	{"load", 2, REGISTER|IMMEDIATE,    0}, // load_im
@@ -95,10 +117,12 @@ static struct InstructionInfo _asm_info[] = {
 	{"load", 2, REGISTER|AT_REGISTER,  2}, // load_at_reg
 	{"add",  2, REGISTER|IMMEDIATE,    3}, // add_im
 	{"add",  2, REGISTER|REGISTER,     4}, // add_reg
-	{"sub",  2, REGISTER|IMMEDIATE,    5}, // add_im
-	{"sub",  2, REGISTER|REGISTER,     6}, // add_reg
+	{"sub",  2, REGISTER|IMMEDIATE,    5}, // sub_im
+	{"sub",  2, REGISTER|REGISTER,     6}, // sub_reg
 	{"jmp",  1, LOCATION,              7}, // jmp
 	{"jnz",  2, REGISTER|LOCATION,     8}, // jzn
+	{"sbn",  3, REGISTER|IMMEDIATE|LOCATION, 9}, // sbn_im
+	{"sbn",  3, REGISTER|REGISTER|LOCATION, 10}, // sbn_reg
 	{"exit", 0, NONE,       EXIT_PROGRAM},
 };
 
@@ -124,7 +148,7 @@ int run_program(char *program, size_t len, struct Processor * const p) {
 	init_processor(program, len, p);
 
 	//fetch
-	unsigned char fn;
+	int fn;
 	while((fn = p->mem[p->pc++]) != EXIT_PROGRAM) {
 		//decode
 		if(fn > INSTRUCTIONS_COUNT - 1) {
