@@ -24,5 +24,7 @@ jnz r0 label    # jump to location 5 if value in register 0 is not zero
 
 add r0 5        # Adds to register 0 the value 5. Result stored in register 0
 add r0 r1       # Adds value of register 1 to rigister 0. Result stored in register 0
+sub r0 1        # Subtracts from register 0 the value 1. Result stored in register 0
+sub r0 r1        # Subtracts from register 1 rigister 1. Result stored in register 01
 exit            # The end of program
 ```

@@ -1,11 +1,12 @@
-# Simple program
-load r0 0
-my_label:
-load r1 @r0
-jnz r0 my_label
-#load r1 @5
-#load r2 @r1
-#foobarbie r0 3
-#add r1 r2
-#add r0 r1
+# Simple program that calculates 5 * 4
+load r0 5
+load r1 4
+loop:
+sub r1 1 # We already have r0 * 1
+jnz r1 continue 
+jmp return
+continue:
+add r0 r0
+jmp loop
+return:
 exit

@@ -33,6 +33,11 @@ T* JOIN(vec_at_, T)(struct vec(T) * v, size_t index) {
 }
 
 static inline
+int JOIN(vec_empty_, T)(struct vec(T) * v) {
+	return v->size == 0;
+}
+
+static inline
 T* JOIN(vec_back_, T)(struct vec(T) * v) {
 	return &v->data[v->size - 1];
 }

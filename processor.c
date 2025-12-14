@@ -43,6 +43,20 @@ void add_reg(struct Processor* p){
 	p->reg[reg_number_a] += p->reg[reg_number_b];
 }
 
+/* Subtracts from a register immediate value, ex: `add r0 5` */
+void sub_im(struct Processor* p){
+	int reg_number = mem_pci(p);
+	p->reg[reg_number] -= mem_pci(p);
+}
+
+/* Subtracts from a register value of another register, ex: `add r0 r1` */
+void sub_reg(struct Processor* p){
+	int reg_number_a = mem_pci(p);
+	int reg_number_b = mem_pci(p);
+	p->reg[reg_number_a] -= p->reg[reg_number_b];
+}
+
+
 /* Jumps to a named label (label should be replaced by address) ex: jmp my_label*/
 void jmp(struct Processor* p) {
 	int address = mem_pci(p);
@@ -66,6 +80,8 @@ static InstructionFunc _asm_funcs[] = {
 	load_at_reg,
 	add_im,
 	add_reg,
+	sub_im,
+	sub_reg,
 	jmp,
 	jnz,
 };
@@ -79,8 +95,10 @@ static struct InstructionInfo _asm_info[] = {
 	{"load", 2, REGISTER|AT_REGISTER,  2}, // load_at_reg
 	{"add",  2, REGISTER|IMMEDIATE,    3}, // add_im
 	{"add",  2, REGISTER|REGISTER,     4}, // add_reg
-	{"jmp",  1, LOCATION,              5}, // jmp
-	{"jnz",  2, REGISTER|LOCATION,     6}, // jzn
+	{"sub",  2, REGISTER|IMMEDIATE,    5}, // add_im
+	{"sub",  2, REGISTER|REGISTER,     6}, // add_reg
+	{"jmp",  1, LOCATION,              7}, // jmp
+	{"jnz",  2, REGISTER|LOCATION,     8}, // jzn
 	{"exit", 0, NONE,       EXIT_PROGRAM},
 };
 

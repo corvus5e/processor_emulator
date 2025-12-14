@@ -40,11 +40,17 @@ int translate_line(const char *line_text, size_t len, struct vec_LabelEntry *lab
  * */
 enum InstructionArgType translate_argument(const char *arg, size_t len, char* out_value);
 
+/* Replaces labels with needed addresses for jmp instructions in compiled program
+ * Returns 1 if succeeded, 0 otherwise
+ * */
+int resolve_labels(struct vec_char *out_program, struct vec_LabelEntry *label_table);
+
 /* Finds the beginning of the word, stores it's pointer into `word_begin`.
+ * `curr_pos` stores pointer to a position where search finished. Useful to search next word.
  * and returns the length of the found word, otherwise returns 0.
  * Skips all blanks.
  * */
-int find_word(const char *text, const char **word_begin);
+int find_word(const char **curr_pos, const char **word_begin);
 
 /* Returns `struct InstructionInfo*` for `instruction`, NULL if no such instruction
  * if zero value passed into `search_type`, `arg_types` is not participated in search
@@ -53,8 +59,14 @@ struct InstructionInfo* find_instruction_info(const char *instuction, size_t len
 
 /* Tries to add label into the `label_table`.
  * On success returns pointer to newly added entry, otherwise returns NULL.
+ * `jump` is a location of where the label is used.
  * */
-LabelEntry* add_label(const char *name, size_t len, struct vec_LabelEntry *label_table, int location);
+LabelEntry* handle_label(const char *name, size_t len, struct vec_LabelEntry *label_table, int location, int jump);
+
+/* Finds a label with `name` in `label_table`.
+ * Returns NULL is not found.
+ * */
+LabelEntry* find_label(const char *name, struct vec_LabelEntry *label_table);
 
 /* Converts `n` chars of string `s` to a number that fits char
  * Returns 1 is succeed to convert and stores result in `out`,
@@ -68,6 +80,7 @@ void printn(const char *s, size_t n);
 
 void print_compile_error(const char *msr, int line_num, const char *word, size_t len);
 
+void print_label_table(struct vec_LabelEntry *label_table);
 
 
 /* --- Implementation ---- */
@@ -97,12 +110,9 @@ int compile_program(const char *file_name, struct vec_char *program)
         free(line);
 	fclose(f);
 
-	for(int i =0; i < label_table.size; ++i) {
-		LabelEntry *l = vec_at_LabelEntry(&label_table, i);
-		printf("Label: %s %d\n", l->name, l->location);
-	}
+	print_label_table(&label_table);
 
-	return status;
+	return resolve_labels(program, &label_table) == 1 ? 0 : COMPILE_ERROR;
 }
 
 int translate_line(const char *line, size_t line_len, struct vec_LabelEntry *label_table, struct vec_char *out_program, int line_num)
@@ -111,12 +121,12 @@ int translate_line(const char *line, size_t line_len, struct vec_LabelEntry *lab
 	const char *curr_pos = line;
 	const char *word = NULL; // Beginning of the word
 
-	int word_len = find_word(curr_pos, &word);
+	int word_len = find_word(&curr_pos, &word);
 	if( word_len == 0 || word[0] == '#') // Empty line or comment
 		return 0;
 
 	if(word[word_len-1] == ':'){ // This is a label, like `foo:`
-		if(!add_label(word, word_len - 1, label_table, out_program->size))
+		if(!handle_label(word, word_len - 1, label_table, out_program->size, -1/*aka no jumps yet*/))
 			return COMPILE_ERROR;
 		return 0;
 	}
@@ -133,8 +143,6 @@ int translate_line(const char *line, size_t line_len, struct vec_LabelEntry *lab
 		return COMPILE_ERROR;
 	}
 
-	curr_pos = word + word_len;
-
 	const char *inst = word;
 	int inst_len = word_len;
 
@@ -142,13 +150,21 @@ int translate_line(const char *line, size_t line_len, struct vec_LabelEntry *lab
 	enum InstructionArgType args_types = NONE;
 	char arg_values[2]; // We have no more that two values for now
 	for(int i = 0; i < inst_info->args_num; ++i) {
-		word_len = find_word(curr_pos, &word);
+		word_len = find_word(&curr_pos, &word);
 		if(word_len == 0) {
 			print_compile_error("Expected an argument for", line_num, inst, inst_len);
 			return COMPILE_ERROR;
 		}
-		args_types |= translate_argument(word, word_len, &arg_values[i]);
-		curr_pos = word + word_len;
+
+		enum InstructionArgType type = translate_argument(word, word_len, &arg_values[i]);
+
+                if (type == LOCATION) {
+			int jump = out_program->size + i + 1; // instruction position + position of current argument
+			if (!handle_label(word, word_len, label_table, -1/*no point/declare location*/, jump))
+				return COMPILE_ERROR;
+                }
+
+                args_types |= type;
 	}
 
 	inst_info = find_instruction_info(inst, inst_len, 1, args_types);
@@ -196,8 +212,29 @@ enum InstructionArgType translate_argument(const char *arg, size_t len, char* ou
 	return NONE;
 }
 
-int find_word(const char *text, const char **word_begin)
+int resolve_labels(struct vec_char *out_program, struct vec_LabelEntry *label_table) {
+	for(int i = 0; i < label_table->size; ++i) {
+		LabelEntry *e = vec_at_LabelEntry(label_table, i);
+		if(e->location < 0) {
+			print_compile_error("Undeclared label ", -1, e->name, strlen(e->name));
+			return 0;
+		}
+
+		if(e->location >= 0 && vec_empty_char(&e->jumps)) {
+			print_compile_error("Unused label ", -1, e->name, strlen(e->name));
+			return 0;
+		}
+
+		for(int j = 0; j < e->jumps.size; ++j) {
+			*vec_at_char(out_program, *vec_at_char(&e->jumps, j)) = e->location;
+		}
+	}
+	return 1;
+}
+
+int find_word(const char **curr_pos, const char **word_begin)
 {
+	const char *text = *curr_pos;
 	int word_len = 0;
 
 	// Skip spaces
@@ -209,6 +246,8 @@ int find_word(const char *text, const char **word_begin)
 	//Count the length of the word
 	for(;text && *text != '\0' && !isspace(*text); ++text, ++word_len)
 		;
+
+	*curr_pos = text;
 
 	return word_len;
 }
@@ -246,22 +285,58 @@ struct InstructionInfo* find_instruction_info(const char *instuction, size_t len
 	return NULL;
 }
 
-LabelEntry* add_label(const char *name, size_t len, struct vec_LabelEntry *label_table, int location) {
-	//TODO: check for duplicates
-	LabelEntry entry;
-	entry.name = (char*)malloc((len + 1) * sizeof(char));
-	if(!entry.name) {
+LabelEntry* handle_label(const char *name, size_t len, struct vec_LabelEntry *label_table, int location, int jump) {
+	LabelEntry new_entry;
+	new_entry.name = (char*)malloc((len + 1) * sizeof(char));
+	if(!new_entry.name)
 		return NULL;
+
+	strncpy(new_entry.name, name, len);
+	new_entry.name[len] = '\0';
+
+	LabelEntry *e = find_label(new_entry.name, label_table);
+	if(e) {
+		free(new_entry.name);
+		if(e->location >=0 && location >= 0) {
+			// Attempt to redeclare label
+			print_compile_error("Label is alredy declared", -1, e->name, len);
+			return NULL;
+		}
+
+		if(e->location < 0) { // label was not "declared yet"
+			e->location = location;
+		}
+		else {
+			// Label used argument in jmp?
+			if(jump < 0) {
+				print_compile_error("Incorrect jump location for ", -1, e->name, len);
+			}
+			vec_push_back_char(&e->jumps, jump);
+		}
+
+		return e;
 	}
 
-	strncpy(entry.name, name, len);
-	entry.name[len] = '\0';
-	entry.location = location;
-	vec_init_char(&entry.jumps);
+	// Adding new label
+	new_entry.location = location;
+	vec_init_char(&new_entry.jumps);
 
-	vec_push_back_LabelEntry(label_table, entry);
+	if(jump >= 0) {
+		vec_push_back_char(&new_entry.jumps, jump);
+	}
+
+	vec_push_back_LabelEntry(label_table, new_entry);
 
 	return vec_back_LabelEntry(label_table);
+}
+
+LabelEntry* find_label(const char *name, struct vec_LabelEntry *label_table) {
+	for(int i = 0; i < label_table->size; ++i) {
+		LabelEntry *e = vec_at_LabelEntry(label_table, i);
+		if(strcmp(name, e->name) == 0)
+			return e;
+	}
+	return NULL;
 }
 
 void printn(const char *s, size_t n) {
@@ -272,5 +347,20 @@ void print_compile_error(const char *msg, int line_num, const char *word, size_t
 	printf("ERROR: %s ", msg);
 	if(word)
 		printn(word, len);
-	printf(" at line %d\n", line_num);
+
+	if(line_num >= 0)
+		printf(" at line %d\n", line_num);
+	else
+		puts("\n");
+}
+
+void print_label_table(struct vec_LabelEntry *label_table) {
+	for(int i = 0; i < label_table->size; ++i) {
+		LabelEntry *l = vec_at_LabelEntry(label_table, i);
+		printf("Label: %s on %d from: ", l->name, l->location);
+		for(int j = 0; j < l->jumps.size; ++j) {
+			printf("%d ", *vec_at_char(&l->jumps, j));
+		}
+		printf("\n");
+	}
 }
