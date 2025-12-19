@@ -104,8 +104,9 @@ static InstructionFunc _asm_funcs[] = {
 	sub_reg,
 	jmp,
 	jnz,
+	/*Commands for exercise 1.7 */
 	sbn_im,
-	sbn_reg
+	sbn_reg,
 };
 
 #define INSTRUCTIONS_COUNT sizeof(_asm_funcs)/sizeof(InstructionFunc)

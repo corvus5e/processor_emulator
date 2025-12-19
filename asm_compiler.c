@@ -14,6 +14,7 @@
 #define MAX_COMMAND_LEN 5
 #define MAX_ARGS 10 //TODO: Make dynamic later
 #define COMPILE_ERROR -1
+#define SPECIAL_LABEL '_' // Label pointing to the next command (aka "do nothing" label)
 
 typedef struct LabelEntry {
 	char *name;
@@ -111,6 +112,9 @@ int compile_program(const char *file_name, struct vec_char *program)
         free(line);
 	fclose(f);
 
+	if(status == COMPILE_ERROR)
+		return status;
+
 	//print_label_table(&label_table);
 
 	return resolve_labels(program, &label_table) == 1 ? 0 : COMPILE_ERROR;
@@ -149,7 +153,7 @@ int translate_line(const char *line, size_t line_len, struct vec_LabelEntry *lab
 
 	// Pasre arguments
 	enum InstructionArgType args_types = NONE;
-	char arg_values[MAX_ARGS];
+	char arg_values[MAX_ARGS] = {0};
 	for(int i = 0; i < inst_info->args_num; ++i) {
 		word_len = find_word(&curr_pos, &word);
 		if(word_len == 0) {
@@ -161,8 +165,13 @@ int translate_line(const char *line, size_t line_len, struct vec_LabelEntry *lab
 
                 if (type == LOCATION) {
 			int jump = out_program->size + i + 1; // instruction position + position of current argument
-			if (!handle_label(word, word_len, label_table, -1/*no point/declare location*/, jump))
-				return COMPILE_ERROR;
+			if(arg_values[i] == SPECIAL_LABEL) {
+				arg_values[i] = jump + 1; // jump to the next line
+			}
+			else {
+				if (!handle_label(word, word_len, label_table, -1/*no point/declare location*/, jump))
+					return COMPILE_ERROR;
+			}
                 }
 
                 args_types |= type;
@@ -204,6 +213,11 @@ enum InstructionArgType translate_argument(const char *arg, size_t len, char* ou
 
 	if(strntoc(arg, len, out_value)) {
 		return IMMEDIATE;
+	}
+
+	if(len == 1 && arg[0] == SPECIAL_LABEL) {
+		*out_value = SPECIAL_LABEL;
+		return LOCATION;
 	}
 
 	if(len > 0 && isalpha(arg[0])) {
@@ -254,16 +268,20 @@ int find_word(const char **curr_pos, const char **word_begin)
 }
 
 int strntoc(const char *s, int n, char *out) {
-	--n;
-	int mul = 1;
-	int res = 0;
-	while(n >=0 && isdigit(s[n])) {
-		res += (s[n] - '0') * mul;
-		mul *= 10;
-		--n;
+	
+	char *tmp = (char*)malloc((n + 1)*sizeof(char));
+	if(!tmp) {
+		return 0;
 	}
 
-	if(n < 0 && res <= UCHAR_MAX) { // all chars passed check and fits char
+	strncpy(tmp, s, n);
+	tmp[n] = '\0';
+	int res = atoi(tmp);
+	free(tmp);
+
+	if(res <= UCHAR_MAX) {
+		if(res == 0 && s[0] != '0') //TODO: Assume we not going to write -0
+			return 0;
 		*out = res;
 		return 1;
 	}
