@@ -26,6 +26,16 @@ jnz r0 label    # jump to location 5 if value in register 0 is not zero
 add r0 5        # Adds to register 0 the value 5. Result stored in register 0
 add r0 r1       # Adds value of register 1 to rigister 0. Result stored in register 0
 sub r0 1        # Subtracts from register 0 the value 1. Result stored in register 0
-sub r0 r1        # Subtracts from register 1 rigister 1. Result stored in register 01
+sub r0 r1       # Subtracts from register 1 rigister 1. Result stored in register 01
+
+sbn r0 5 label  # Subtructs 5 from r0 and jumps to label if r0 is negative
+sbn r0 r1 label # Subtructs r1 from r0 and jumps to label if r0 is negative
+sbn r0 5 _      # Subtructs 5 from r0 and jumps to the next commnad if negative (so it no jump actually)
+sbn r0 r1 _     # Subtructs r1 from r0 and jumps to the next commnad
+
 exit            # The end of program
 ```
+
+The `sbn` command is added to do Exercise 1.7 and make sure it works.  
+_asm_samples_ contains a program which calculates a factorial of a number (only 5! max as emulator is 8bit) using only `sbn` command
+
