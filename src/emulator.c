@@ -1,34 +1,23 @@
-/*
- * - Reads file with a asm-like program
- * - Compiles it to emulated machine code
- * - Loads the compiled program into "computer" memory
- * - Runs the program
-*/
+#include "emulator.h"
 
 #include <stdio.h>
 #include <stdlib.h>
-
-#include "processor.h"
 
 #define T char
 #include "vector.h"
 #undef T
 
+#include "asm_compiler.h"
+
 int compile_program(const char *file_name, struct vec_char *program);
 void print_processor(const struct Processor *p);
 
-int main(int argc, char *argv[])
-{
-	printf("Welcome to simple processor emulator!\n");
-	if(argc < 2){
-		printf("Usage: emulator.out <program.asm>\n");
-	}
-
+int compile_and_run_program(const char *file_name, struct Processor *processor) {
 	struct vec_char program;
 	vec_init_char(&program);
 
-	int status = compile_program(argv[1], &program);
-	if(status == -1){/*TODO: place COMPILE_ERROR in accessible place*/
+	int status = compile_program(file_name, &program);
+	if(status == COMPILE_ERROR){
 		printf("Compilation failed\n");
 		return 1;
 	}

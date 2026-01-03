@@ -1,5 +1,4 @@
-
-#include "processor.h"
+#include "asm_compiler.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,9 +10,10 @@
 #include "vector.h"
 #undef T
 
+#include "processor.h"
+
 #define MAX_COMMAND_LEN 5
 #define MAX_ARGS 10 //TODO: Make dynamic later
-#define COMPILE_ERROR -1
 #define SPECIAL_LABEL '_' // Label pointing to the next command (aka "do nothing" label)
 
 typedef struct LabelEntry {
@@ -25,8 +25,6 @@ typedef struct LabelEntry {
 #define T LabelEntry
 #include "vector.h"
 #undef T
-
-int compile_program(const char *file_name, struct vec_char *program);
 
 /* Translated one line of assembly into machine instructions
  * The line is expected to be in format either:
@@ -86,7 +84,6 @@ void print_label_table(struct vec_LabelEntry *label_table);
 
 
 /* --- Implementation ---- */
-
 
 int compile_program(const char *file_name, struct vec_char *program)
 {
