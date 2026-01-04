@@ -112,6 +112,7 @@ int compile_program(const char *file_name, struct vec_char *program)
 	if(status == COMPILE_ERROR)
 		return status;
 
+	vec_push_back_char(program, -1); //TODO: MOVE EXIT_PROGRAM to accessible place
 	//print_label_table(&label_table);
 
 	return resolve_labels(program, &label_table) == 1 ? 0 : COMPILE_ERROR;

@@ -11,66 +11,114 @@
 
 /* Processos instructions implementation*/
 
-/* loads into register immediate value, ex: `load r0 5` */
-void load_im(struct Processor* p){
+/* moves into register immediate value, ex: `mov r0 5` */
+void mov_im(struct Processor* p){
 	int reg_number = mem_pci(p);
 	p->reg[reg_number] = mem_pci(p);
 }
 
-/* loads into register from address value, ex: `load r0 @5`*/
-void load_at_im(struct Processor* p){
-	int reg_number = mem_pci(p);
-	p->reg[reg_number] = mem_apci(p);
+/* moves into register from address value, ex: `mov r0 r1`*/
+void mov_reg(struct Processor* p){
+	int dst_reg_number = mem_pci(p);
+	int src_reg_number = mem_pci(p);
+	p->reg[dst_reg_number] = p->reg[src_reg_number];
 }
 
-/* loads into register from address from register, ex: `load r1 @r0` */
-void load_at_reg(struct Processor* p){
-	int reg_number_a = mem_pci(p);
-	int reg_number_b = mem_pci(p);
-	p->reg[reg_number_a] = mem_areg(p, reg_number_b);
-}
-
-/* Adds to a register immediate value, ex: `add r0 5` */
+/* Adds to a register immediate value, ex: `add r0 r1 5` */
 void add_im(struct Processor* p){
-	int reg_number = mem_pci(p);
-	p->reg[reg_number] += mem_pci(p);
+	int dst_reg_number = mem_pci(p);
+	int a_reg_number = mem_pci(p);
+	int b_value = mem_pci(p);
+	p->reg[dst_reg_number] = p->reg[a_reg_number] + b_value;
 }
 
-/* Adds to a register value of another register, ex: `add r0 r1` */
+/* Adds to a register value of another register, ex: `add r0 r1 r2` */
 void add_reg(struct Processor* p){
-	int reg_number_a = mem_pci(p);
-	int reg_number_b = mem_pci(p);
-	p->reg[reg_number_a] += p->reg[reg_number_b];
+	int dst_reg_number = mem_pci(p);
+	int a_reg_number = mem_pci(p);
+	int b_reg_number = mem_pci(p);
+	p->reg[dst_reg_number] = p->reg[a_reg_number] + p->reg[b_reg_number];
+
 }
 
-/* Subtracts from a register immediate value, ex: `add r0 5` */
+/* Subtracts from a register immediate value, ex: `sub r0 r1 5` */
 void sub_im(struct Processor* p){
-	int reg_number = mem_pci(p);
-	p->reg[reg_number] -= mem_pci(p);
+	int dst_reg_number = mem_pci(p);
+	int a_reg_number = mem_pci(p);
+	int b_value = mem_pci(p);
+	p->reg[dst_reg_number] = p->reg[a_reg_number] - b_value;
 }
 
-/* Subtracts from a register value of another register, ex: `add r0 r1` */
+/* Subtracts from a register value of another register, ex: `sub r0 r1 r2` */
 void sub_reg(struct Processor* p){
-	int reg_number_a = mem_pci(p);
-	int reg_number_b = mem_pci(p);
-	p->reg[reg_number_a] -= p->reg[reg_number_b];
+	int dst_reg_number = mem_pci(p);
+	int a_reg_number = mem_pci(p);
+	int b_reg_number = mem_pci(p);
+	p->reg[dst_reg_number] = p->reg[a_reg_number] - p->reg[b_reg_number];
 }
 
-
-/* Jumps to a named label (label should be replaced by address) ex: jmp my_label*/
-void jmp(struct Processor* p) {
-	int address = mem_pci(p);
-	p->pc = address;
+/* Multiplies value from a register on an immediate value, ex: `mul r0 r1 5` */
+void mul_im(struct Processor* p){
+	int dst_reg_number = mem_pci(p);
+	int a_reg_number = mem_pci(p);
+	int b_value = mem_pci(p);
+	p->reg[dst_reg_number] = p->reg[a_reg_number] * b_value;
 }
 
-/* Jumps to named label if register is non-zero, ex: jnz r0 my_label*/
-void jnz(struct Processor* p) {
+/* Multiplies value from a register on value from another register, ex: `mul r0 r1 r2` */
+void mul_reg(struct Processor* p){
+	int dst_reg_number = mem_pci(p);
+	int a_reg_number = mem_pci(p);
+	int b_reg_number = mem_pci(p);
+	p->reg[dst_reg_number] = p->reg[a_reg_number] * p->reg[b_reg_number];
+}
+
+/* Divides value from a register on an immediate value, ex: `div r0 r1 5` */
+void div_im(struct Processor* p){
+	int dst_reg_number = mem_pci(p);
+	int a_reg_number = mem_pci(p);
+	int b_value = mem_pci(p);
+	p->reg[dst_reg_number] = p->reg[a_reg_number] / b_value;
+}
+
+/* Divides value from a register on value from another register, ex: `div r0 r1 r2` */
+void div_reg(struct Processor* p){
+	int dst_reg_number = mem_pci(p);
+	int a_reg_number = mem_pci(p);
+	int b_reg_number = mem_pci(p);
+	p->reg[dst_reg_number] = p->reg[a_reg_number] / p->reg[b_reg_number];
+}
+
+void mod_im(struct Processor* p){
+	int dst_reg_number = mem_pci(p);
+	int a_reg_number = mem_pci(p);
+	int b_value = mem_pci(p);
+	p->reg[dst_reg_number] = p->reg[a_reg_number] % b_value;
+}
+
+void mod_reg(struct Processor* p){
+	int dst_reg_number = mem_pci(p);
+	int a_reg_number = mem_pci(p);
+	int b_reg_number = mem_pci(p);
+	p->reg[dst_reg_number] = p->reg[a_reg_number] % p->reg[b_reg_number];
+}
+
+void cmp_im(struct Processor* p){
 	int reg_number = mem_pci(p);
-	int address = mem_pci(p);
-	if(p->reg[reg_number]){
-		p->pc = address;
-	}
+	int cmp = p->reg[reg_number] - mem_pci(p);
+	p->flag_E = cmp == 0;
+	p->flag_GT = cmp > 0;
 }
+
+/* moves into register from address value, ex: `mov r0 r1`*/
+void cmp_reg(struct Processor* p){
+	int a_reg_number = mem_pci(p);
+	int b_reg_number = mem_pci(p);
+	int cmp = p->reg[a_reg_number] - p->reg[b_reg_number];
+	p->flag_E = cmp == 0;
+	p->flag_GT = cmp > 0;
+}
+
 
 void sbn_im(struct Processor* p) {
 	int reg_number = mem_pci(p);
@@ -95,15 +143,21 @@ void sbn_reg(struct Processor* p) {
 typedef void(*InstructionFunc)(struct Processor*);
 
 static InstructionFunc _asm_funcs[] = {
-	load_im,
-	load_at_im,
-	load_at_reg,
+	mov_reg,
+	mov_im,
 	add_im,
 	add_reg,
 	sub_im,
 	sub_reg,
-	jmp,
-	jnz,
+	mul_im,
+	mul_reg,
+	div_im,
+	div_reg,
+	mod_im,
+	mod_reg,
+	cmp_im,
+	cmp_reg,
+
 	/*Commands for exercise 1.7 */
 	sbn_im,
 	sbn_reg,
@@ -113,15 +167,23 @@ static InstructionFunc _asm_funcs[] = {
 #define EXIT_PROGRAM -1
 
 static struct InstructionInfo _asm_info[] = {
-	{"load", 2, REGISTER|IMMEDIATE,    0}, // load_im
-	{"load", 2, REGISTER|AT_IMMEDIATE, 1}, // load_at_im
-	{"load", 2, REGISTER|AT_REGISTER,  2}, // load_at_reg
-	{"add",  2, REGISTER|IMMEDIATE,    3}, // add_im
-	{"add",  2, REGISTER|REGISTER,     4}, // add_reg
-	{"sub",  2, REGISTER|IMMEDIATE,    5}, // sub_im
-	{"sub",  2, REGISTER|REGISTER,     6}, // sub_reg
-	{"jmp",  1, LOCATION,              7}, // jmp
-	{"jnz",  2, REGISTER|LOCATION,     8}, // jzn
+	{"mov", 2, REGISTER|REGISTER, 0},
+	{"mov", 2, REGISTER|IMMEDIATE, 1},
+
+	{"add",  3, REGISTER|REGISTER|IMMEDIATE,    2}, // add_im
+	{"add",  3, REGISTER|REGISTER|REGISTER,     3}, // add_reg
+	{"sub",  3, REGISTER|REGISTER|IMMEDIATE,    4}, // sub_im
+	{"sub",  3, REGISTER|REGISTER|REGISTER,     5}, // sub_reg
+	{"mul",  3, REGISTER|REGISTER|IMMEDIATE,    6},
+	{"mul",  3, REGISTER|REGISTER|REGISTER,     7},
+	{"div",  3, REGISTER|REGISTER|IMMEDIATE,    8},
+	{"div",  3, REGISTER|REGISTER|REGISTER,     9},
+	{"mod",  3, REGISTER|REGISTER|IMMEDIATE,    10},
+	{"mod",  3, REGISTER|REGISTER|REGISTER,     11},
+
+	{"cmp", 2, REGISTER|IMMEDIATE, 12},
+	{"cmp", 2, REGISTER|REGISTER, 13},
+
 	{"sbn",  3, REGISTER|IMMEDIATE|LOCATION, 9}, // sbn_im
 	{"sbn",  3, REGISTER|REGISTER|LOCATION, 10}, // sbn_reg
 	{"exit", 0, NONE,       EXIT_PROGRAM},

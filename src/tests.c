@@ -19,12 +19,19 @@ int test_1() {
 	return 0;
 }
 
+int test_2() {
+	struct Processor p;
+	compile_and_run_program(SAMPLE("example_26.asm"), &p);
+	return 0;
+}
+
+
 int main() {
 
-	int (*tests[])() = {test_1};
+	int (*tests[])() = {test_2};
 
 	for(int i = 0; i < sizeof(tests)/sizeof(*tests); ++i) {
-		if(tests[i]()) {
+		if(tests[i]() == 0) {
 			printf("Test %d [PASSED]\n", i);
 		}
 		else {

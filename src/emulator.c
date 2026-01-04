@@ -49,6 +49,8 @@ void print_processor(const struct Processor *p) {
 		printf("reg[%d] = %d\n", i, p->reg[i]);
 	}
 	printf("---------------\n");
+	printf("flag.E = %d\n", p->flag_E);
+	printf("flag.GT = %d\n", p->flag_GT);
 	// for(int i = 0; i < 20; ++i){
 	// 	printf("mem %d = %d\n", i, p->mem[i]);
 	// }

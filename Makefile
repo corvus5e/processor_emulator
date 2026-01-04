@@ -43,7 +43,7 @@ run:
 	./$(OUT_DIR)/emulator.out asm_samples/$(SAMPLE)
 
 debug:
-	lldb $(OUT_DIR)/emulator.out -- asm_samples/sample.asm
+	lldb $(OUT_DIR)/emulator.out -- asm_samples/example_26.asm
 
 clean:
 	rm -rd bin
