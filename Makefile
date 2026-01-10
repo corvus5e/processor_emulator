@@ -42,6 +42,9 @@ SAMPLE := ex_7.asm
 run:
 	./$(OUT_DIR)/emulator.out asm_samples/$(SAMPLE)
 
+test:
+	./$(OUT_DIR)/tests.out
+
 debug:
 	lldb $(OUT_DIR)/emulator.out -- asm_samples/example_26.asm
 

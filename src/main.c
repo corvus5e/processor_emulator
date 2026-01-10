@@ -8,6 +8,6 @@ int main(int argc, char *argv[])
 		printf("Usage: emulator.out <program.asm>\n");
 	}
 
-	struct Processor p;
+	struct Processor p = {0};
 	return compile_and_run_program(argv[1], &p);
 }

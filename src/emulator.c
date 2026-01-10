@@ -29,11 +29,9 @@ int compile_and_run_program(const char *file_name, struct Processor *processor) 
 	}
 	printf("\n");
 
-	struct Processor p;
-	
-	run_program(program.data, program.size, &p);
+	run_program(program.data, program.size, processor);
 
-	print_processor(&p);
+	print_processor(processor);
 
 	vec_free_char(&program);
 

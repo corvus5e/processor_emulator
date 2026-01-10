@@ -10,8 +10,8 @@ struct Processor {
 	unsigned char pc;    // program counter
 	char mem[MEM_LEN];   // memory, 8bit memory
 	char reg[REG_COUNT]; // registers
-	int flag_E;
-	int flag_GT;
+	char flag_E;
+	char flag_GT;
 };
 
 enum InstructionArgType {

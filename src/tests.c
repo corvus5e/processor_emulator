@@ -1,8 +1,3 @@
-#include <stdio.h>
-
-#define T char
-#include "vector.h"
-#undef T
 
 #ifndef SAMPLES_DIR
 #define SAMPLES_DIR "" // Make code highlighting happy
@@ -10,34 +5,25 @@
 #endif
 
 #include "emulator.h"
+#include "tests_at_home.h"
 
 #define SAMPLE(x) SAMPLES_DIR "/" x
 
-int test_1() {
+TEST_DISABLED(sample,
+{
 	struct Processor p;
 	compile_and_run_program(SAMPLE("sample.asm"), &p);
 	return 0;
-}
+})
 
-int test_2() {
-	struct Processor p;
+TEST(exmaple_26,
+{
+	struct Processor p = {0};
 	compile_and_run_program(SAMPLE("example_26.asm"), &p);
-	return 0;
-}
-
+	EXPECT_EQ(p.reg[4], 37);
+	return TEST_PASSED;
+})
 
 int main() {
-
-	int (*tests[])() = {test_2};
-
-	for(int i = 0; i < sizeof(tests)/sizeof(*tests); ++i) {
-		if(tests[i]() == 0) {
-			printf("Test %d [PASSED]\n", i);
-		}
-		else {
-			printf("Test %d [FAILED]\n", i);
-		}
-	}
-
-	return 0;
+	return test_at_home_run();
 }
