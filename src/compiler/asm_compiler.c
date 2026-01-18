@@ -6,11 +6,11 @@
 #include <string.h>
 #include <limits.h>
 
-#define T char
-#include "vector.h"
-#undef T
+#include "asm_info.h"
 
-#include "processor.h"
+#define T char
+#include "common/vector.h"
+#undef T
 
 #define MAX_COMMAND_LEN 5
 #define MAX_ARGS 10 //TODO: Make dynamic later
@@ -23,7 +23,7 @@ typedef struct LabelEntry {
 } LabelEntry;
 
 #define T LabelEntry
-#include "vector.h"
+#include "common/vector.h"
 #undef T
 
 /* Translated one line of assembly into machine instructions
@@ -33,7 +33,7 @@ typedef struct LabelEntry {
  * and writes them into `out_program` starting from `free_pos`
  * Returns the number of written instructions + arguments into `out program`
  * */
-int translate_line(const char *line_text, size_t len, struct vec_LabelEntry *label_table, struct vec_char *out_program, int line_num);
+int translate_line(const char *line_text, size_t len, struct vec_LabelEntry *label_table, struct vec_word *out_program, int line_num);
 
 /* Returns InstructionArgType and writes value int `out_value`
  * is type is not `NONE`
@@ -43,7 +43,7 @@ enum InstructionArgType translate_argument(const char *arg, size_t len, char* ou
 /* Replaces labels with needed addresses for jmp instructions in compiled program
  * Returns 1 if succeeded, 0 otherwise
  * */
-int resolve_labels(struct vec_char *out_program, struct vec_LabelEntry *label_table);
+int resolve_labels(struct vec_word *out_program, struct vec_LabelEntry *label_table);
 
 /* Finds the beginning of the word, stores it's pointer into `word_begin`.
  * `curr_pos` stores pointer to a position where search finished. Useful to search next word.
@@ -85,7 +85,7 @@ void print_label_table(struct vec_LabelEntry *label_table);
 
 /* --- Implementation ---- */
 
-int compile_program(const char *file_name, struct vec_char *program)
+int compile_program(const char *file_name, struct vec_word *program)
 {
 	FILE *f = fopen(file_name, "r");
 	if(!f){
@@ -112,13 +112,13 @@ int compile_program(const char *file_name, struct vec_char *program)
 	if(status == COMPILE_ERROR)
 		return status;
 
-	vec_push_back_char(program, -1); //TODO: MOVE EXIT_PROGRAM to accessible place
+	vec_push_back_word(program, -1); //TODO: MOVE EXIT_PROGRAM to accessible place
 	//print_label_table(&label_table);
 
 	return resolve_labels(program, &label_table) == 1 ? 0 : COMPILE_ERROR;
 }
 
-int translate_line(const char *line, size_t line_len, struct vec_LabelEntry *label_table, struct vec_char *out_program, int line_num)
+int translate_line(const char *line, size_t line_len, struct vec_LabelEntry *label_table, struct vec_word *out_program, int line_num)
 {
 	int written = 0;
 	const char *curr_pos = line;
@@ -181,9 +181,9 @@ int translate_line(const char *line, size_t line_len, struct vec_LabelEntry *lab
 		return COMPILE_ERROR;
 	}
 
-	vec_push_back_char(out_program, inst_info->code);
+	vec_push_back_word(out_program, inst_info->code);
 	for(int i = 0; i < inst_info->args_num; ++i){
-		vec_push_back_char(out_program, arg_values[i]);
+		vec_push_back_word(out_program, arg_values[i]);
 	}
 
 	written += inst_info->args_num + 1;
@@ -195,18 +195,9 @@ enum InstructionArgType translate_argument(const char *arg, size_t len, char* ou
 	if(len == 0)
 		return NONE;
 
-	if(len == 2 && arg[0] == 'r' && isdigit(arg[1])) {
-		*out_value = arg[1] - '0'; // We have less 10 registers for now
+	if(len == 2 && arg[0] == 'r' && isdigit(arg[1])) { //TODO: Make to recognize register > 9
+		*out_value = arg[1] - '0';
 		return REGISTER;
-	}
-
-	if(len == 3 && arg[0] == '@' && arg[1] == 'r' && isdigit(arg[2])) {
-		*out_value = arg[2] - '0';
-		return AT_REGISTER;
-	}
-
-	if(len > 1 && arg[0] == '@' && strntoc(arg + 1, len - 1, out_value)) {
-		return AT_IMMEDIATE;
 	}
 
 	if(strntoc(arg, len, out_value)) {
@@ -225,7 +216,7 @@ enum InstructionArgType translate_argument(const char *arg, size_t len, char* ou
 	return NONE;
 }
 
-int resolve_labels(struct vec_char *out_program, struct vec_LabelEntry *label_table) {
+int resolve_labels(struct vec_word *out_program, struct vec_LabelEntry *label_table) {
 	for(int i = 0; i < label_table->size; ++i) {
 		LabelEntry *e = vec_at_LabelEntry(label_table, i);
 		if(e->location < 0) {
@@ -239,7 +230,7 @@ int resolve_labels(struct vec_char *out_program, struct vec_LabelEntry *label_ta
 		}
 
 		for(int j = 0; j < e->jumps.size; ++j) {
-			*vec_at_char(out_program, *vec_at_char(&e->jumps, j)) = e->location;
+			*vec_at_word(out_program, *vec_at_char(&e->jumps, j)) = e->location;
 		}
 	}
 	return 1;
@@ -289,14 +280,12 @@ int strntoc(const char *s, int n, char *out) {
 
 struct InstructionInfo* find_instruction_info(const char *instuction, size_t len, int search_type, enum InstructionArgType arg_types)
 {
-	struct InstructionInfo *asm_info = NULL;
-	int size = get_asm_instructions_info(&asm_info);
-
+	int size = sizeof(asm_info)/sizeof(struct InstructionInfo);
 	for(int i = 0; i < size; ++i) {
-          if (strncmp(instuction, asm_info[i].name, len) == 0 &&
+		if (strncmp(instuction, asm_info[i].name, len) == 0 &&
 			  (!search_type || arg_types == asm_info[i].args_types)) {
 		  return asm_info + i;
-          }
+		}
         }
 
 	return NULL;

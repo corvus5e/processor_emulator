@@ -10,6 +10,7 @@
 
 #ifndef T
 #error "T should be defined to use vector"
+#define T char /* Make clangd complain less when reading this file*/
 #endif
 
 #ifndef _VECTOR__H__

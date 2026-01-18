@@ -58,4 +58,8 @@ The Chapter 3 introduces the SimpleRisc ISA for 32-bit processor
 - [ ] Change current ISA to _SimpleRisc_ for asm compiler
 - [ ] Migrate to 32-bit word
 - [ ] Add ',' between arguments to match GNU assembler format
+- [ ] Add mandatory '.' before label
 
+### Local TODO:
+- [ ] Add tests for each group of instructions as in the book
+- [ ] Encode 1 arg instruction in 32-bit format

@@ -164,36 +164,6 @@ static InstructionFunc _asm_funcs[] = {
 };
 
 #define INSTRUCTIONS_COUNT sizeof(_asm_funcs)/sizeof(InstructionFunc)
-#define EXIT_PROGRAM -1
-
-static struct InstructionInfo _asm_info[] = {
-	{"mov", 2, REGISTER|REGISTER, 0},
-	{"mov", 2, REGISTER|IMMEDIATE, 1},
-
-	{"add",  3, REGISTER|REGISTER|IMMEDIATE,    2}, // add_im
-	{"add",  3, REGISTER|REGISTER|REGISTER,     3}, // add_reg
-	{"sub",  3, REGISTER|REGISTER|IMMEDIATE,    4}, // sub_im
-	{"sub",  3, REGISTER|REGISTER|REGISTER,     5}, // sub_reg
-	{"mul",  3, REGISTER|REGISTER|IMMEDIATE,    6},
-	{"mul",  3, REGISTER|REGISTER|REGISTER,     7},
-	{"div",  3, REGISTER|REGISTER|IMMEDIATE,    8},
-	{"div",  3, REGISTER|REGISTER|REGISTER,     9},
-	{"mod",  3, REGISTER|REGISTER|IMMEDIATE,    10},
-	{"mod",  3, REGISTER|REGISTER|REGISTER,     11},
-
-	{"cmp", 2, REGISTER|IMMEDIATE, 12},
-	{"cmp", 2, REGISTER|REGISTER, 13},
-
-	{"sbn",  3, REGISTER|IMMEDIATE|LOCATION, 9}, // sbn_im
-	{"sbn",  3, REGISTER|REGISTER|LOCATION, 10}, // sbn_reg
-	{"exit", 0, NONE,       EXIT_PROGRAM},
-};
-
-
-int get_asm_instructions_info(struct InstructionInfo **asm_info) {
-	*asm_info = _asm_info;
-	return sizeof(_asm_info)/sizeof(struct InstructionInfo);
-}
 
 int init_processor(const char *program, unsigned char len, struct Processor * const processor) {
 	for(int i = 0;i < len; ++i)
@@ -212,7 +182,7 @@ int run_program(char *program, size_t len, struct Processor * const p) {
 
 	//fetch
 	int fn;
-	while((fn = p->mem[p->pc++]) != EXIT_PROGRAM) {
+	while((fn = p->mem[p->pc++]) != -1/*EXIT_PROGRAM*/) {
 		//decode
 		if(fn > INSTRUCTIONS_COUNT - 1) {
 			printf("INT: Unknow instruction %u\n", fn);

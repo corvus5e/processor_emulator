@@ -28,6 +28,7 @@ int compile_and_run_program(const char *file_name, struct Processor *processor) 
 		printf("%d|", (unsigned char)program.data[i]);
 	}
 	printf("\n");
+	return 0; //NOTE: For now compile only
 
 	run_program(program.data, program.size, processor);
 
