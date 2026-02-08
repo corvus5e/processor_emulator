@@ -2,20 +2,21 @@
 #define _ASM_INFO_H_
 
 #include <stdint.h>
+
 typedef int32_t WORD;
 
 enum InstructionArgType {
 	NONE = 0,
 	LOCATION = 1, // it could be number or label name
 	IMMEDIATE = 1 << 1,
-	IMM_IDX_REG = 1 << 2, // example: 12[r1]
+	AT_REGISTER = 1 << 2, // example: 12[r1], part [r1] - is at register
 	REGISTER = 1 << 3,
 };
 
 struct InstructionInfo {
 	const char *name;
 	char args_num;
-	int args_types; // Mask of InstructionArgType
+	int args_types; // Mask of InstructionArgType, //TODO: Make array, as reg|reg is the same as reg or reg|reg|reg
 	char code;
 };
 
@@ -53,8 +54,8 @@ static struct InstructionInfo asm_info[] = {
 	{"asr", 3,  REGISTER|REGISTER|REGISTER,  24},
 	{"asr", 3,  REGISTER|REGISTER|IMMEDIATE, 25},
 
-	{"ld",  2,  REGISTER|IMM_IDX_REG,        26},
-	{"st",  2,  REGISTER|IMM_IDX_REG,        27},
+	{"ld",  3,  REGISTER|IMMEDIATE|AT_REGISTER, 26},
+	{"st",  3,  REGISTER|IMMEDIATE|AT_REGISTER, 27},
 
 	{"b",   1,  LOCATION,                    28},
 

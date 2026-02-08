@@ -61,5 +61,9 @@ The Chapter 3 introduces the SimpleRisc ISA for 32-bit processor
 - [ ] Add mandatory '.' before label
 
 ### Local TODO:
-- [ ] Add tests for each group of instructions as in the book
+- [x] Add tests for each group of instructions as in the book
 - [ ] Encode 1 arg instruction in 32-bit format
+
+- [ ] Finish working on new function parse_arguments to handle ',' and 12[r1], it is not used for now
+- [ ] Mirgate to this function in translate line
+- [ ] Make arguments type information an array!

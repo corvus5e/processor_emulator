@@ -35,6 +35,8 @@ typedef struct LabelEntry {
  * */
 int translate_line(const char *line_text, size_t len, struct vec_LabelEntry *label_table, struct vec_word *out_program, int line_num);
 
+enum InstructionArgType parse_arguments(const char *args_line, size_t len, char* out_value);
+
 /* Returns InstructionArgType and writes value int `out_value`
  * is type is not `NONE`
  * */
@@ -115,7 +117,7 @@ int compile_program(const char *file_name, struct vec_word *program)
 	vec_push_back_word(program, -1); //TODO: MOVE EXIT_PROGRAM to accessible place
 	//print_label_table(&label_table);
 
-	return resolve_labels(program, &label_table) == 1 ? 0 : COMPILE_ERROR;
+	return resolve_labels(program, &label_table);
 }
 
 int translate_line(const char *line, size_t line_len, struct vec_LabelEntry *label_table, struct vec_word *out_program, int line_num)
@@ -191,6 +193,62 @@ int translate_line(const char *line, size_t line_len, struct vec_LabelEntry *lab
 	return written;
 }
 
+enum InstructionArgType parse_arguments(const char *args_line, size_t len, char* out_value)
+{
+	enum InstructionArgType all_types = NONE;
+	int arg_count = 0;
+	const char *curr = args_line;
+	const char *line_end = args_line + len;
+	const char *word_begin = NULL;
+	int in_sq_brackets = 0;
+
+	while(*curr && curr < line_end) {
+		int word_len = 0;
+
+		// Skip spaces
+		for(;curr && *curr != '\0' && (isspace(*curr) || *curr == ','); ++curr)
+			;
+
+		if(!*curr) continue;
+
+		word_begin = curr;
+
+		//Count the length of the word
+		for(;curr && *curr != '\0' && !isspace(*curr) && *curr != ',' && *curr != '[' && *curr != ']'; ++curr, ++word_len)
+			;
+
+		if(*curr == '['){
+			in_sq_brackets = 1;
+			++curr;
+		}
+
+		if(*curr == ']'){
+			in_sq_brackets = 0;
+			++curr;
+		}
+
+		printn(word_begin, word_len);
+		printf("|");
+		char value;
+		enum InstructionArgType type = translate_argument(word_begin, word_len, &value);
+		if(type != NONE) {
+			if(in_sq_brackets && type == REGISTER) {
+				type = AT_REGISTER;
+			}
+			out_value[arg_count] = value;
+			++arg_count;
+			all_types |= type;
+
+		}
+	}
+
+	if(in_sq_brackets) {
+		printf("Error: unclosed brackets");
+	}
+
+	return all_types;
+}
+
 enum InstructionArgType translate_argument(const char *arg, size_t len, char* out_value) {
 	if(len == 0)
 		return NONE;
@@ -221,19 +279,19 @@ int resolve_labels(struct vec_word *out_program, struct vec_LabelEntry *label_ta
 		LabelEntry *e = vec_at_LabelEntry(label_table, i);
 		if(e->location < 0) {
 			print_compile_error("Undeclared label ", -1, e->name, strlen(e->name));
-			return 0;
+			return COMPILE_ERROR;
 		}
 
 		if(e->location >= 0 && vec_empty_char(&e->jumps)) {
 			print_compile_error("Unused label ", -1, e->name, strlen(e->name));
-			return 0;
+			return COMPILE_ERROR;
 		}
 
 		for(int j = 0; j < e->jumps.size; ++j) {
 			*vec_at_word(out_program, *vec_at_char(&e->jumps, j)) = e->location;
 		}
 	}
-	return 1;
+	return COMPILE_SUCCESS;
 }
 
 int find_word(const char **curr_pos, const char **word_begin)

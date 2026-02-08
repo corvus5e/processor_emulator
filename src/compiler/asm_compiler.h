@@ -8,6 +8,7 @@
 #undef T
 
 #define COMPILE_ERROR -1
+#define COMPILE_SUCCESS 0
 
 int compile_program(const char *file_name, struct vec_word *program);
 

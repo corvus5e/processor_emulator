@@ -24,12 +24,12 @@ typedef struct TestInfo {
 } TestInfo;
 
 #define T TestInfo
-#include "vector.h"
+#include "common/vector.h"
 #undef T
 
 typedef const char* str;
 #define T str
-#include "vector.h"
+#include "common/vector.h"
 #undef T
 
 
