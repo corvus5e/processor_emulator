@@ -68,15 +68,19 @@ int test_at_home_run() {
 
 #define STR(x) #x
 #define PREFIX(prefix, word) prefix ## word
-#define VOID_P (void)
-#define TEST(test_name, code) enum TestResult PREFIX(TEST_, test_name) VOID_P { code } \
-	static void __attribute__((constructor(102))) PREFIX(register_, test_name) VOID_P { \
+#define VOID_ARGS (void)
+#define TEST(test_name) \
+	enum TestResult PREFIX(TEST_, test_name)(void); \
+	static void __attribute__((constructor(102))) PREFIX(register_, test_name)(void){ \
 		TestInfo ti; \
 		ti.name = STR(test_name);\
 		ti.fun_ptr = PREFIX(TEST_, test_name); \
-		vec_push_back_TestInfo(&test_cases_list, ti); }
+		vec_push_back_TestInfo(&test_cases_list, ti); } \
+	enum TestResult PREFIX(TEST_, test_name)(void) \
 
-#define TEST_DISABLED(name, code)
+#define TEST_DISABLED(name) \
+	enum TestResult PREFIX(TEST_, test_name)(void); \
+	enum TestResult PREFIX(TEST_, test_name)(void) \
 
 #define EXPECT_EQ(a, b) if ((a) != (b)) \
 { \

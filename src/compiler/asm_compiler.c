@@ -13,7 +13,6 @@
 #undef T
 
 #define MAX_COMMAND_LEN 5
-#define MAX_ARGS 10 //TODO: Make dynamic later
 #define SPECIAL_LABEL '_' // Label pointing to the next command (aka "do nothing" label)
 
 typedef struct LabelEntry {
@@ -35,7 +34,9 @@ typedef struct LabelEntry {
  * */
 int translate_line(const char *line_text, size_t len, struct vec_LabelEntry *label_table, struct vec_word *out_program, int line_num);
 
-enum InstructionArgType parse_arguments(const char *args_line, size_t len, char* out_value);
+/* Returns 0 on success
+ * */
+int parse_arguments(const char *args_line, size_t len, char* out_value, enum InstructionArgType out_arg_types[MAX_ARGS_NUM], int *out_args_count);
 
 /* Returns InstructionArgType and writes value int `out_value`
  * is type is not `NONE`
@@ -57,7 +58,7 @@ int find_word(const char **curr_pos, const char **word_begin);
 /* Returns `struct InstructionInfo*` for `instruction`, NULL if no such instruction
  * if zero value passed into `search_type`, `arg_types` is not participated in search
  * */
-struct InstructionInfo* find_instruction_info(const char *instuction, size_t len, int search_type, enum InstructionArgType arg_types);
+struct InstructionInfo* find_instruction_info(const char *instuction, size_t len, int search_type, enum InstructionArgType arg_types[MAX_ARGS_NUM]);
 
 /* Tries to add label into the `label_table`.
  * On success returns pointer to newly added entry, otherwise returns NULL.
@@ -152,8 +153,8 @@ int translate_line(const char *line, size_t line_len, struct vec_LabelEntry *lab
 	int inst_len = word_len;
 
 	// Pasre arguments
-	enum InstructionArgType args_types = NONE;
-	char arg_values[MAX_ARGS] = {0};
+	arg_types_array args_types = {NONE};
+	char arg_values[MAX_ARGS_NUM] = {0};
 	for(int i = 0; i < inst_info->args_num; ++i) {
 		word_len = find_word(&curr_pos, &word);
 		if(word_len == 0) {
@@ -174,7 +175,7 @@ int translate_line(const char *line, size_t line_len, struct vec_LabelEntry *lab
 			}
                 }
 
-                args_types |= type;
+                args_types[i] = type;
 	}
 
 	inst_info = find_instruction_info(inst, inst_len, 1, args_types);
@@ -193,10 +194,9 @@ int translate_line(const char *line, size_t line_len, struct vec_LabelEntry *lab
 	return written;
 }
 
-enum InstructionArgType parse_arguments(const char *args_line, size_t len, char* out_value)
+int parse_arguments(const char *args_line, size_t len, char* out_value, arg_types_array out_arg_types, int *out_args_count)
 {
-	enum InstructionArgType all_types = NONE;
-	int arg_count = 0;
+	*out_args_count = 0;
 	const char *curr = args_line;
 	const char *line_end = args_line + len;
 	const char *word_begin = NULL;
@@ -222,11 +222,6 @@ enum InstructionArgType parse_arguments(const char *args_line, size_t len, char*
 			++curr;
 		}
 
-		if(*curr == ']'){
-			in_sq_brackets = 0;
-			++curr;
-		}
-
 		printn(word_begin, word_len);
 		printf("|");
 		char value;
@@ -235,18 +230,26 @@ enum InstructionArgType parse_arguments(const char *args_line, size_t len, char*
 			if(in_sq_brackets && type == REGISTER) {
 				type = AT_REGISTER;
 			}
-			out_value[arg_count] = value;
-			++arg_count;
-			all_types |= type;
+			if(*out_args_count > MAX_ARGS_NUM) {
+				return 1;
+			}
+			out_value[*out_args_count] = value;
+			out_arg_types[*out_args_count] = type;
+			*out_args_count += 1;
+		}
 
+		if(*curr == ']'){
+			in_sq_brackets = 0;
+			++curr;
 		}
 	}
 
 	if(in_sq_brackets) {
 		printf("Error: unclosed brackets");
+		return 1;
 	}
 
-	return all_types;
+	return COMPILE_SUCCESS;
 }
 
 enum InstructionArgType translate_argument(const char *arg, size_t len, char* out_value) {
@@ -336,14 +339,21 @@ int strntoc(const char *s, int n, char *out) {
 	return 0;
 }
 
-struct InstructionInfo* find_instruction_info(const char *instuction, size_t len, int search_type, enum InstructionArgType arg_types)
+struct InstructionInfo* find_instruction_info(const char *instuction, size_t len, int search_type, enum InstructionArgType arg_types[MAX_ARGS_NUM])
 {
 	int size = sizeof(asm_info)/sizeof(struct InstructionInfo);
 	for(int i = 0; i < size; ++i) {
-		if (strncmp(instuction, asm_info[i].name, len) == 0 &&
-			  (!search_type || arg_types == asm_info[i].args_types)) {
-		  return asm_info + i;
-		}
+		int instruction_found = strncmp(instuction, asm_info[i].name, len) == 0;
+		int args_same = 1;
+                if (search_type && instruction_found) {
+			for(int j = 0; j < asm_info[i].args_num; ++j) {
+				args_same &= (arg_types[j] == asm_info[i].arg_types[j]);
+			}
+
+                }
+                if(instruction_found && args_same) {
+			return asm_info + i;
+                }
         }
 
 	return NULL;

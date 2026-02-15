@@ -9,57 +9,57 @@
 
 #define SAMPLE(x) SAMPLES_DIR "/" x
 
-TEST_DISABLED(sample,
+TEST_DISABLED(sample)
 {
 	struct vec_word program;
 	compile_program(SAMPLE("sample.asm"), &program);
 	return 0;
-})
+}
 
-TEST(exmaple_26, // mov, mul, sub instructions
+TEST(exmaple_26) // mov, mul, sub instructions
 {
 	struct vec_word program;
 	vec_init_word(&program);
 	EXPECT_EQ(compile_program(SAMPLE("example_26.asm"), &program), COMPILE_SUCCESS); // Compiled OK
 	//EXPECT_EQ(p.reg[4], 37);
 	return TEST_PASSED;
-})
+}
 
-TEST(exmaple_27, // mov, mul, div instructions
+TEST(exmaple_27) // mov, mul, div instructions
 {
 	struct vec_word program;
 	vec_init_word(&program);
 	EXPECT_EQ(compile_program(SAMPLE("example_27.asm"), &program), COMPILE_SUCCESS);
 	//EXPECT_EQ(p.reg[4], 37);
 	return TEST_PASSED;
-})
+}
 
-TEST(exmaple_27_1, // + cmp
+TEST(exmaple_27_1) // + cmp
 {
 	struct vec_word program;
 	vec_init_word(&program);
 	EXPECT_EQ(compile_program(SAMPLE("example_27_1.asm"), &program), COMPILE_SUCCESS);
 	//EXPECT_EQ(p.reg[4], 37);
 	return TEST_PASSED;
-})
+}
 
-TEST(exmaple_28, // and, or, not
+TEST(exmaple_28) // and, or, not
 {
 	struct vec_word program;
 	vec_init_word(&program);
 	EXPECT_EQ(compile_program(SAMPLE("example_28.asm"), &program), COMPILE_SUCCESS);
 	//EXPECT_EQ(p.reg[4], 37);
 	return TEST_PASSED;
-})
+}
 
-TEST(exmaple_28_1, // lsl, lsr, asr
+TEST(exmaple_28_1) // lsl, lsr, asr
 {
 	struct vec_word program;
 	vec_init_word(&program);
 	EXPECT_EQ(compile_program(SAMPLE("example_28_1.asm"), &program), COMPILE_SUCCESS);
 	//EXPECT_EQ(p.reg[4], 37);
 	return TEST_PASSED;
-})
+}
 
 
 int main() {
