@@ -14,6 +14,7 @@
 
 #define MAX_COMMAND_LEN 5
 #define SPECIAL_LABEL '_' // Label pointing to the next command (aka "do nothing" label)
+#define COMMA_STR ','
 
 typedef struct LabelEntry {
 	char *name;
@@ -25,23 +26,6 @@ typedef struct LabelEntry {
 #include "common/vector.h"
 #undef T
 
-/* Translated one line of assembly into machine instructions
- * The line is expected to be in format either:
- * `label_name:` or
- * `<command> [args1 [arg2]]`
- * and writes them into `out_program` starting from `free_pos`
- * Returns the number of written instructions + arguments into `out program`
- * */
-int translate_line(const char *line_text, size_t len, struct vec_LabelEntry *label_table, struct vec_word *out_program, int line_num);
-
-/* Returns 0 on success
- * */
-int parse_arguments(const char *args_line, size_t len, char* out_value, enum InstructionArgType out_arg_types[MAX_ARGS_NUM], int *out_args_count);
-
-/* Returns InstructionArgType and writes value int `out_value`
- * is type is not `NONE`
- * */
-enum InstructionArgType translate_argument(const char *arg, size_t len, char* out_value);
 
 /* Replaces labels with needed addresses for jmp instructions in compiled program
  * Returns 1 if succeeded, 0 otherwise
@@ -197,35 +181,17 @@ int translate_line(const char *line, size_t line_len, struct vec_LabelEntry *lab
 int parse_arguments(const char *args_line, size_t len, char* out_value, arg_types_array out_arg_types, int *out_args_count)
 {
 	*out_args_count = 0;
-	const char *curr = args_line;
-	const char *line_end = args_line + len;
-	const char *word_begin = NULL;
+	const char **curr = &args_line;
 	int in_sq_brackets = 0;
 
-	while(*curr && curr < line_end) {
-		int word_len = 0;
+	int i = 0;
+	struct Token token;
+	while((token = next_token(curr)).type != STR_END && ++i <= 3) {
+		if(token.type == COMMA) continue;
 
-		// Skip spaces
-		for(;curr && *curr != '\0' && (isspace(*curr) || *curr == ','); ++curr)
-			;
-
-		if(!*curr) continue;
-
-		word_begin = curr;
-
-		//Count the length of the word
-		for(;curr && *curr != '\0' && !isspace(*curr) && *curr != ',' && *curr != '[' && *curr != ']'; ++curr, ++word_len)
-			;
-
-		if(*curr == '['){
-			in_sq_brackets = 1;
-			++curr;
-		}
-
-		printn(word_begin, word_len);
-		printf("|");
+		printf("(%.*s)", (int)token.len, token.str);
 		char value;
-		enum InstructionArgType type = translate_argument(word_begin, word_len, &value);
+		enum InstructionArgType type = translate_argument(token.str, token.len, &value);
 		if(type != NONE) {
 			if(in_sq_brackets && type == REGISTER) {
 				type = AT_REGISTER;
@@ -237,16 +203,6 @@ int parse_arguments(const char *args_line, size_t len, char* out_value, arg_type
 			out_arg_types[*out_args_count] = type;
 			*out_args_count += 1;
 		}
-
-		if(*curr == ']'){
-			in_sq_brackets = 0;
-			++curr;
-		}
-	}
-
-	if(in_sq_brackets) {
-		printf("Error: unclosed brackets");
-		return 1;
 	}
 
 	return COMPILE_SUCCESS;
@@ -275,6 +231,65 @@ enum InstructionArgType translate_argument(const char *arg, size_t len, char* ou
 	}
 
 	return NONE;
+}
+
+enum InstructionArgType translate_argument2(const struct Token *tokem, arg_values_array out_values) {
+}
+
+struct Token next_token(const char **text) {
+	struct Token token = {0, STR_END, NULL};
+
+	// Skip spaces
+	for(;text && *text && **text != '\0' && **text != '\n' && isspace(**text); ++(*text))
+		;
+
+	token.str = *text;
+
+	if(**text == COMMA_STR) {
+		token.type = COMMA;
+		token.len = 1;
+		++(*text); // Move to next char
+		return token;
+	}
+
+	if(**text == '\n') {
+		token.type = NEW_LINE;
+		token.len = 1;
+		++(*text); // Move to next char
+		return token;
+	}
+
+	if(**text == '[') {
+		token.type = LBRACKET;
+		token.len = 1;
+		++(*text); // Move to next char
+		return token;
+	}
+
+	if(**text == ']') {
+		token.type = RBRACKET;
+		token.len = 1;
+		++(*text); // Move to next char
+		return token;
+	}
+
+	if(**text == '\0') {
+		token.type = STR_END;
+		token.len = 0;
+		return token;
+	}
+
+	token.type = WORD;
+
+	//Count the length of the word
+        for (; text && *text && **text != '\0' &&
+		!isspace(**text) &&
+               **text != COMMA_STR &&
+	       **text != '[' && **text != ']';
+             ++(*text), ++token.len)
+          ;
+
+        return token;
 }
 
 int resolve_labels(struct vec_word *out_program, struct vec_LabelEntry *label_table) {

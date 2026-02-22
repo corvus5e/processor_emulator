@@ -78,7 +78,7 @@ int test_at_home_run() {
 		vec_push_back_TestInfo(&test_cases_list, ti); } \
 	enum TestResult PREFIX(TEST_, test_name)(void) \
 
-#define TEST_DISABLED(name) \
+#define TEST_DISABLED(test_name) \
 	enum TestResult PREFIX(TEST_, test_name)(void); \
 	enum TestResult PREFIX(TEST_, test_name)(void) \
 

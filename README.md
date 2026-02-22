@@ -65,6 +65,7 @@ The Chapter 3 introduces the SimpleRisc ISA for 32-bit processor
 - [ ] Encode 1 arg instruction in 32-bit format
 
 - [x] Finish working on new function parse_arguments to handle ',' and 12[r1], it is not used for now
+- [ ] Finish arg parsing using `next_token`
 - [ ] Add more tests with value checks and other expressions
 - [ ] Mirgate to this function in translate line
 - [ ] Make arguments type information an array!

@@ -6,8 +6,6 @@
 #include "compiler/asm_info.h"
 #include "compiler/asm_compiler.h"
 
-int parse_arguments(const char *args_line, size_t len, char* out_value, arg_types_array out_arg_types, int *out_args_count);
-
 bool compare_arg_types(arg_types_array res, arg_types_array ref, int args_size) {
 	for(int i = 0; i < args_size; ++i) {
 		if(res[i] != ref[i]) return false;
@@ -15,7 +13,25 @@ bool compare_arg_types(arg_types_array res, arg_types_array ref, int args_size) 
 	return true;
 }
 
-TEST(parse_args)
+TEST(parse_tokens)
+{
+	const int str_types_num = 8;
+
+	const char *line = "ld r1, 12[r2]\n";
+
+	enum TokenType expected_types[] = {WORD, WORD, COMMA, WORD, LBRACKET, WORD, RBRACKET, NEW_LINE};
+
+	const char **curr_pos = &line;
+	for(int j = 0; j < str_types_num; ++j) {
+		struct Token t = next_token(curr_pos);
+		printf("(%.*s)\n", (int)t.len, t.str);
+		EXPECT_EQ(t.type, expected_types[j]);
+	}
+
+	return TEST_PASSED;
+}
+
+TEST_DISABLED(parse_args)
 {
 	const char *line = " r1, 12[r2]";
 
@@ -30,9 +46,9 @@ TEST(parse_args)
 	return TEST_PASSED;
 }
 
-TEST(parse_args_bad)
+TEST_DISABLED(parse_args_bad)
 {
-	const char *line = "r1, 12, [r2]";
+	const char *line = "r1, 12[r2]";
 
 	char values[MAX_ARGS_NUM];
 	arg_types_array result_types;

@@ -20,7 +20,7 @@ TEST(exmaple_26) // mov, mul, sub instructions
 {
 	struct vec_word program;
 	vec_init_word(&program);
-	EXPECT_EQ(compile_program(SAMPLE("example_26.asm"), &program), COMPILE_SUCCESS); // Compiled OK
+	EXPECT_EQ(compile_program(SAMPLE("example_26.asm"), &program), COMPILE_SUCCESS);
 	//EXPECT_EQ(p.reg[4], 37);
 	return TEST_PASSED;
 }

@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-typedef int32_t WORD;
-
 enum InstructionArgType {
 	NONE = 0,
 	LOCATION = 1, // it could be number or label name
@@ -16,6 +14,7 @@ enum InstructionArgType {
 #define MAX_ARGS_NUM 3
 
 typedef enum InstructionArgType arg_types_array[MAX_ARGS_NUM];
+typedef int arg_values_array[3];
 
 struct InstructionInfo {
 	const char *name;
