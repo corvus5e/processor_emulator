@@ -57,15 +57,11 @@ _asm_samples_ contains a program which calculates a factorial of a number (only 
 The Chapter 3 introduces the SimpleRisc ISA for 32-bit processor  
 - [ ] Change current ISA to _SimpleRisc_ for asm compiler
 - [ ] Migrate to 32-bit word
-- [ ] Add ',' between arguments to match GNU assembler format
 - [ ] Add mandatory '.' before label
 
 ### Local TODO:
 - [x] Add tests for each group of instructions as in the book
 - [ ] Encode 1 arg instruction in 32-bit format
 
-- [x] Finish working on new function parse_arguments to handle ',' and 12[r1], it is not used for now
-- [ ] Finish arg parsing using `next_token`
 - [ ] Add more tests with value checks and other expressions
 - [ ] Mirgate to this function in translate line
-- [ ] Make arguments type information an array!
