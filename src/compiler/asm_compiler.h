@@ -23,6 +23,7 @@ enum TokenType {
 	LBRACKET, //[
 	RBRACKET, //]
 	NEW_LINE,
+	COMMENT,
 	STR_END,
 };
 
@@ -34,6 +35,7 @@ struct Token {
 
 struct CompileError {
 	int error_code;
+	int column;
 	const char *msg;
 };
 

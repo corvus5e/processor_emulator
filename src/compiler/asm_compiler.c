@@ -62,14 +62,15 @@ int compile_program(const char *file_name, struct vec_word *program)
 	char *line = NULL;
 	size_t n;
 	ssize_t nread;
-	int line_num = 0;
+	int line_num = 1;
 	vec_init_LabelEntry(&label_table);
 	struct InstructionInfo *inst_info;
 	arg_values_array arg_value;
 	struct Token t;
 
 	for (; (nread = getline(&line, &n, f)) != -1; ++line_num) {
-		if((t = get_token(&line)).str[0] == '#') {
+		const char *line_begin = line;
+		if((t = get_token(&line_begin)).type == COMMENT || t.type == NEW_LINE) {
 			continue;
 		}
 		status = parse_line(line, &inst_info, arg_value);
@@ -81,7 +82,7 @@ int compile_program(const char *file_name, struct vec_word *program)
 	fclose(f);
 
 	if(status.error_code == COMPILE_ERROR) {
-		fprintf(stderr, "Error on line %d: %s\n", line_num, status.msg);
+		fprintf(stderr, "Error on line %d, col %d: %s\n", line_num, status.column, status.msg);
 		return COMPILE_ERROR;
 	}
 
@@ -126,7 +127,7 @@ struct CompileError parse_line(const char *line_text, struct InstructionInfo **f
 			.error_code == COMPILE_ERROR) {
 			return status;
 		}
-		if ((t = get_token(&curr_pos)).type == NEW_LINE) {
+		if ((t = get_token(&curr_pos)).type == NEW_LINE || t.type == COMMENT) {
 			unget_token(t);
 			break; // All argument parsed
 		} else if(t.type == LBRACKET) {
@@ -134,7 +135,8 @@ struct CompileError parse_line(const char *line_text, struct InstructionInfo **f
 		} else if(t.type != COMMA) {
 			struct CompileError status = {
 			    .error_code = COMPILE_ERROR,
-			    .msg	= "Expected comma or end of line"};
+			    .msg	= "Expected comma or end of line",
+			    .column = curr_pos - line_text};
 			return status;
 		}
 	}
@@ -142,13 +144,15 @@ struct CompileError parse_line(const char *line_text, struct InstructionInfo **f
 	// Find instruction again with all parsed arguments
 	if (!(*found_instruction = find_instruction_info(search_pattern))) {
 		struct CompileError status = {.error_code = COMPILE_ERROR,
-					      .msg = "Unexpected arguments types for instruction"};
+					      .msg = "Unexpected arguments types for instruction",
+					      .column = curr_pos - line_text};
 		return status;
 	}
 
-	if((t = get_token(&curr_pos)).type != NEW_LINE) {
+	if((t = get_token(&curr_pos)).type != NEW_LINE && t.type != COMMENT) {
 		status.error_code = COMPILE_ERROR;
 		status.msg = "Too many arguments. Expected end of line";
+		status.column = curr_pos - line_text;
 	}
 
 	return status;
@@ -239,6 +243,13 @@ struct Token get_token(const char **text) {
 		return token;
 	}
 
+	if(**text == '#') {
+		token.type = COMMENT;
+		token.len = 1;
+		++(*text); // Move to next char
+		return token;
+	}
+
 	if(**text == '[') {
 		token.type = LBRACKET;
 		token.len = 1;
@@ -265,7 +276,8 @@ struct Token get_token(const char **text) {
         for (; text && *text && **text != '\0' &&
 		!isspace(**text) &&
                **text != ',' &&
-	       **text != '[' && **text != ']';
+	       **text != '[' && **text != ']' &&
+	       **text != '#';
              ++(*text), ++token.len)
           ;
 
