@@ -1,6 +1,8 @@
 #ifndef ASM_COMPILER_H_
 #define ASM_COMPILER_H_
 
+#include <stdbool.h>
+
 #include "common/simple_risc_types.h"
 
 #define T word
@@ -11,6 +13,7 @@
 
 #define COMPILE_ERROR -1
 #define COMPILE_SUCCESS 0
+#define LABEL_ARG 1
 
 struct vec_LabelEntry;
 
@@ -29,31 +32,38 @@ struct Token {
 	const char *str;
 };
 
+struct CompileError {
+	int error_code;
+	const char *msg;
+};
+
 int compile_program(const char *file_name, struct vec_word *program);
 
-/* Translated one line of assembly into machine instructions
- * The line is expected to be in format either:
- * `label_name:` or
- * `<command> [args1 [arg2]]`
- * and writes them into `out_program` starting from `free_pos`
- * Returns the number of written instructions + arguments into `out program`
+/*
+ * `line_text` should end with newline and null-terminating character
  * */
-int translate_line(const char *line_text, size_t len, struct vec_LabelEntry *label_table, struct vec_word *out_program, int line_num);
+struct CompileError parse_line(const char *line_text, struct InstructionInfo **found_instruction, arg_values_array out_args);
 
-/* Returns 0 on success
+struct CompileError parse_arg(const char **curr_pos, enum InstructionArgType *out_type, int* out_value);
+
+bool parse_register(int* out_value);
+
+bool isLabel(const char *word, size_t len);
+
+/* Returns `struct InstructionInfo*` using `instruction` 'WHERE' clause.
+ * Returns NULL if no such instruction found.
+ * If negative value passed into `instruction.args_num`, `arg_types` is not participated in search.
  * */
-int parse_arguments(const char *args_line, size_t len, char* out_value, arg_types_array out_arg_types, int *out_args_count);
+struct InstructionInfo* find_instruction_info(struct InstructionInfo search_pattern);
 
-/* Returns InstructionArgType and writes value int `out_value`
- * is type is not `NONE`
+struct Token get_token(const char **curr_pos);
+
+void unget_token(struct Token);
+
+/* Converts `n` chars of string `s` to a number that fits char
+ * Returns 1 is succeed to convert and stores result in `out`,
+ * otherwise returns 0
  * */
-enum InstructionArgType translate_argument(const char *arg, size_t len, char* out_value);
-
-/* Returns InstructionArgType and writes value int `out_value`
- * is type is not `NONE`
- * */
-enum InstructionArgType translate_argument2(const struct Token *tokem, arg_values_array out_values);
-
-struct Token next_token(const char **curr_pos);
+bool strntoc(const char *s, int n, int *out);
 
 #endif

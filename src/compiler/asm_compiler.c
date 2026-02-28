@@ -14,7 +14,6 @@
 
 #define MAX_COMMAND_LEN 5
 #define SPECIAL_LABEL '_' // Label pointing to the next command (aka "do nothing" label)
-#define COMMA_STR ','
 
 typedef struct LabelEntry {
 	char *name;
@@ -26,46 +25,25 @@ typedef struct LabelEntry {
 #include "common/vector.h"
 #undef T
 
+/* Global label table*/
+struct vec_LabelEntry label_table;
+
 
 /* Replaces labels with needed addresses for jmp instructions in compiled program
  * Returns 1 if succeeded, 0 otherwise
  * */
 int resolve_labels(struct vec_word *out_program, struct vec_LabelEntry *label_table);
 
-/* Finds the beginning of the word, stores it's pointer into `word_begin`.
- * `curr_pos` stores pointer to a position where search finished. Useful to search next word.
- * and returns the length of the found word, otherwise returns 0.
- * Skips all blanks.
- * */
-int find_word(const char **curr_pos, const char **word_begin);
-
-/* Returns `struct InstructionInfo*` for `instruction`, NULL if no such instruction
- * if zero value passed into `search_type`, `arg_types` is not participated in search
- * */
-struct InstructionInfo* find_instruction_info(const char *instuction, size_t len, int search_type, enum InstructionArgType arg_types[MAX_ARGS_NUM]);
-
 /* Tries to add label into the `label_table`.
  * On success returns pointer to newly added entry, otherwise returns NULL.
  * `jump` is a location of where the label is used.
  * */
-LabelEntry* handle_label(const char *name, size_t len, struct vec_LabelEntry *label_table, int location, int jump);
+LabelEntry* handle_label(const char *name, size_t len, int location, int jump);
 
 /* Finds a label with `name` in `label_table`.
  * Returns NULL is not found.
  * */
-LabelEntry* find_label(const char *name, struct vec_LabelEntry *label_table);
-
-/* Converts `n` chars of string `s` to a number that fits char
- * Returns 1 is succeed to convert and stores result in `out`,
- * otherwise returns 0
- * */
-int strntoc(const char *s, int n, char *out);
-
-/* Prints `n` chars of line `s`
- * */
-void printn(const char *s, size_t n);
-
-void print_compile_error(const char *msr, int line_num, const char *word, size_t len);
+LabelEntry* find_label(const char *name);
 
 void print_label_table(struct vec_LabelEntry *label_table);
 
@@ -80,163 +58,165 @@ int compile_program(const char *file_name, struct vec_word *program)
 		return COMPILE_ERROR;
 	}
 	
-	int status = 0;
+	struct CompileError status = {.error_code = COMPILE_ERROR};
 	char *line = NULL;
 	size_t n;
 	ssize_t nread;
 	int line_num = 0;
-	struct vec_LabelEntry label_table;
 	vec_init_LabelEntry(&label_table);
+	struct InstructionInfo *inst_info;
+	arg_values_array arg_value;
+	struct Token t;
 
-        while ((nread = getline(&line, &n, f)) != -1 &&
-               (status = translate_line(line, nread, &label_table, program, ++line_num)) !=
-                   COMPILE_ERROR)
-          ;
+	for (; (nread = getline(&line, &n, f)) != -1; ++line_num) {
+		if((t = get_token(&line)).str[0] == '#') {
+			continue;
+		}
+		status = parse_line(line, &inst_info, arg_value);
+		if (status.error_code == COMPILE_ERROR)
+			break;
+	}
 
-        free(line);
+	free(line);
 	fclose(f);
 
-	if(status == COMPILE_ERROR)
-		return status;
+	if(status.error_code == COMPILE_ERROR) {
+		fprintf(stderr, "Error on line %d: %s\n", line_num, status.msg);
+		return COMPILE_ERROR;
+	}
 
 	vec_push_back_word(program, -1); //TODO: MOVE EXIT_PROGRAM to accessible place
 	//print_label_table(&label_table);
 
-	return resolve_labels(program, &label_table);
+	//TODO: Finish label resolve
+	int foo = resolve_labels(program, &label_table);
+	return 0;
 }
 
-int translate_line(const char *line, size_t line_len, struct vec_LabelEntry *label_table, struct vec_word *out_program, int line_num)
-{
-	int written = 0;
-	const char *curr_pos = line;
-	const char *word = NULL; // Beginning of the word
-
-	int word_len = find_word(&curr_pos, &word);
-	if( word_len == 0 || word[0] == '#') // Empty line or comment
-		return 0;
-
-	if(word[word_len-1] == ':'){ // This is a label, like `foo:`
-		if(!handle_label(word, word_len - 1, label_table, out_program->size, -1/*aka no jumps yet*/))
-			return COMPILE_ERROR;
-		return 0;
+struct CompileError parse_line(const char *line_text, struct InstructionInfo **found_instruction, arg_values_array out_args) {
+	const char *curr_pos = line_text;
+	struct Token t = get_token(&curr_pos);
+	if(t.type != WORD) {
+		struct CompileError status = {.error_code = COMPILE_ERROR, .msg = "Unexpected token"};
+		return status;
+	}
+	bool is_label = isLabel(t.str, t.len); // inside if implicit declaration with int return type
+	if(is_label) {
+		//TODO: Handle label
+		// if(add_label(...))
+		struct CompileError status = {.error_code = COMPILE_SUCCESS};
+		return status;
 	}
 
-	// Parse instruction
-	if(word_len > MAX_COMMAND_LEN) {
-		print_compile_error("Unknown command ", line_num, word, word_len);
-		return COMPILE_ERROR;
+	struct InstructionInfo search_pattern = {.name = t.str, .args_num = -1/*Search only by name*/};
+	 // It should be a command then
+	if (!(*found_instruction = find_instruction_info(search_pattern))) {
+		struct CompileError status = {.error_code = COMPILE_ERROR,
+					      .msg = "Unknown instruction"};
+		return status;
 	}
 
-	struct InstructionInfo *inst_info = find_instruction_info(word, word_len, 0, 0);
-	if(!inst_info){
-		print_compile_error("Unknown command ", line_num, word, word_len);
-		return COMPILE_ERROR;
-	}
-
-	const char *inst = word;
-	int inst_len = word_len;
-
-	// Pasre arguments
-	arg_types_array args_types = {NONE};
-	char arg_values[MAX_ARGS_NUM] = {0};
-	for(int i = 0; i < inst_info->args_num; ++i) {
-		word_len = find_word(&curr_pos, &word);
-		if(word_len == 0) {
-			print_compile_error("Expected an argument for", line_num, inst, inst_len);
-			return COMPILE_ERROR;
+	// Now we should parse arguments
+	search_pattern.args_num = 0;
+	struct CompileError status;
+	for (; search_pattern.args_num < 3; ++search_pattern.args_num) {
+		if ((status = parse_arg(&curr_pos,
+					search_pattern.arg_types + search_pattern.args_num,
+					out_args + search_pattern.args_num))
+			.error_code == COMPILE_ERROR) {
+			return status;
 		}
-
-		enum InstructionArgType type = translate_argument(word, word_len, &arg_values[i]);
-
-                if (type == LOCATION) {
-			int jump = out_program->size + i + 1; // instruction position + position of current argument
-			if(arg_values[i] == SPECIAL_LABEL) {
-				arg_values[i] = jump + 1; // jump to the next line
-			}
-			else {
-				if (!handle_label(word, word_len, label_table, -1/*no point/declare location*/, jump))
-					return COMPILE_ERROR;
-			}
-                }
-
-                args_types[i] = type;
-	}
-
-	inst_info = find_instruction_info(inst, inst_len, 1, args_types);
-	if(!inst_info) {
-		print_compile_error("Unexpected argument type", line_num, NULL, 0);
-		return COMPILE_ERROR;
-	}
-
-	vec_push_back_word(out_program, inst_info->code);
-	for(int i = 0; i < inst_info->args_num; ++i){
-		vec_push_back_word(out_program, arg_values[i]);
-	}
-
-	written += inst_info->args_num + 1;
-
-	return written;
-}
-
-int parse_arguments(const char *args_line, size_t len, char* out_value, arg_types_array out_arg_types, int *out_args_count)
-{
-	*out_args_count = 0;
-	const char **curr = &args_line;
-	int in_sq_brackets = 0;
-
-	int i = 0;
-	struct Token token;
-	while((token = next_token(curr)).type != STR_END && ++i <= 3) {
-		if(token.type == COMMA) continue;
-
-		printf("(%.*s)", (int)token.len, token.str);
-		char value;
-		enum InstructionArgType type = translate_argument(token.str, token.len, &value);
-		if(type != NONE) {
-			if(in_sq_brackets && type == REGISTER) {
-				type = AT_REGISTER;
-			}
-			if(*out_args_count > MAX_ARGS_NUM) {
-				return 1;
-			}
-			out_value[*out_args_count] = value;
-			out_arg_types[*out_args_count] = type;
-			*out_args_count += 1;
+		if ((t = get_token(&curr_pos)).type == NEW_LINE) {
+			unget_token(t);
+			break; // All argument parsed
+		} else if(t.type == LBRACKET) {
+			unget_token(t); // that might be at_register arg
+		} else if(t.type != COMMA) {
+			struct CompileError status = {
+			    .error_code = COMPILE_ERROR,
+			    .msg	= "Expected comma or end of line"};
+			return status;
 		}
 	}
 
-	return COMPILE_SUCCESS;
+	// Find instruction again with all parsed arguments
+	if (!(*found_instruction = find_instruction_info(search_pattern))) {
+		struct CompileError status = {.error_code = COMPILE_ERROR,
+					      .msg = "Unexpected arguments types for instruction"};
+		return status;
+	}
+
+	if((t = get_token(&curr_pos)).type != NEW_LINE) {
+		status.error_code = COMPILE_ERROR;
+		status.msg = "Too many arguments. Expected end of line";
+	}
+
+	return status;
 }
 
-enum InstructionArgType translate_argument(const char *arg, size_t len, char* out_value) {
-	if(len == 0)
-		return NONE;
-
-	if(len == 2 && arg[0] == 'r' && isdigit(arg[1])) { //TODO: Make to recognize register > 9
-		*out_value = arg[1] - '0';
-		return REGISTER;
+struct CompileError parse_arg(const char **curr_pos, enum InstructionArgType *out_type, int* out_value) {
+	struct CompileError status = {.error_code = COMPILE_ERROR, .msg = ""};
+	struct Token t = get_token(curr_pos);
+	if (t.type == NEW_LINE) {
+		status.msg = "Unexpected end of line. Expected argument.";
+		return status;
 	}
 
-	if(strntoc(arg, len, out_value)) {
-		return IMMEDIATE;
+	if(t.type == LBRACKET) {
+		if((t = get_token(curr_pos)).type != WORD) {
+			status.msg = "Failed to parse at registet argument. Expected register after '['";
+			return status;
+		}
+		if (t.str[0] != 'r') {
+			status.msg = "Failed to parse at registet argument. Not a register";
+			return status;
+		}
+		if (!strntoc(t.str + 1, t.len - 1, out_value)) {
+			status.msg = "Failed to parse register argument";
+			return status;
+		}
+		*out_type = AT_REGISTER;
+
+		if ((t = get_token(curr_pos)).type != RBRACKET) {
+			status.msg = "Expected closing bracket ']'";
+			return status;
+		}
 	}
 
-	if(len == 1 && arg[0] == SPECIAL_LABEL) {
-		*out_value = SPECIAL_LABEL;
-		return LOCATION;
+	if(t.type == WORD) {
+		if(isdigit(t.str[0])) {
+			if (!strntoc(t.str, t.len, out_value)) {
+				status.msg = "Failed to parse immediate argument";
+				return status;
+			}
+			*out_type = IMMEDIATE;
+		} else if (t.str[0] == 'r') {
+			if (!strntoc(t.str + 1, t.len - 1, out_value)) {
+				status.msg = "Failed to parse register argument";
+				return status;
+			}
+			*out_type = REGISTER;
+		} else {
+			//TODO: handle label
+		}
 	}
 
-	if(len > 0 && isalpha(arg[0])) {
-		return LOCATION;
-	}
-
-	return NONE;
+	status.error_code = COMPILE_SUCCESS;
+	return status;
 }
 
-enum InstructionArgType translate_argument2(const struct Token *tokem, arg_values_array out_values) {
+bool isLabel(const char *word, size_t len) {
+	return false;//TODO: Implement
 }
 
-struct Token next_token(const char **text) {
+struct Token token_buf[50];
+int token_free_pos = 0;
+
+struct Token get_token(const char **text) {
+	if (token_free_pos > 0) {
+		return token_buf[--token_free_pos];
+	}
+
 	struct Token token = {0, STR_END, NULL};
 
 	// Skip spaces
@@ -245,7 +225,7 @@ struct Token next_token(const char **text) {
 
 	token.str = *text;
 
-	if(**text == COMMA_STR) {
+	if(**text == ',') {
 		token.type = COMMA;
 		token.len = 1;
 		++(*text); // Move to next char
@@ -284,7 +264,7 @@ struct Token next_token(const char **text) {
 	//Count the length of the word
         for (; text && *text && **text != '\0' &&
 		!isspace(**text) &&
-               **text != COMMA_STR &&
+               **text != ',' &&
 	       **text != '[' && **text != ']';
              ++(*text), ++token.len)
           ;
@@ -292,16 +272,22 @@ struct Token next_token(const char **text) {
         return token;
 }
 
+void unget_token(struct Token t) {
+	if(token_free_pos > 50) {
+		fprintf(stderr, "Token buffer overflow!\n");
+		exit(1); //TODO: Migrate to a vector
+	}
+	token_buf[token_free_pos++] = t;
+}
+
 int resolve_labels(struct vec_word *out_program, struct vec_LabelEntry *label_table) {
 	for(int i = 0; i < label_table->size; ++i) {
 		LabelEntry *e = vec_at_LabelEntry(label_table, i);
 		if(e->location < 0) {
-			print_compile_error("Undeclared label ", -1, e->name, strlen(e->name));
 			return COMPILE_ERROR;
 		}
 
 		if(e->location >= 0 && vec_empty_char(&e->jumps)) {
-			print_compile_error("Unused label ", -1, e->name, strlen(e->name));
 			return COMPILE_ERROR;
 		}
 
@@ -312,31 +298,11 @@ int resolve_labels(struct vec_word *out_program, struct vec_LabelEntry *label_ta
 	return COMPILE_SUCCESS;
 }
 
-int find_word(const char **curr_pos, const char **word_begin)
-{
-	const char *text = *curr_pos;
-	int word_len = 0;
-
-	// Skip spaces
-	for(;text && *text != '\0' && isspace(*text); ++text)
-		;
-
-	*word_begin = text;
-
-	//Count the length of the word
-	for(;text && *text != '\0' && !isspace(*text); ++text, ++word_len)
-		;
-
-	*curr_pos = text;
-
-	return word_len;
-}
-
-int strntoc(const char *s, int n, char *out) {
+bool strntoc(const char *s, int n, int *out) {
 	
 	char *tmp = (char*)malloc((n + 1)*sizeof(char));
 	if(!tmp) {
-		return 0;
+		return false;
 	}
 
 	strncpy(tmp, s, n);
@@ -346,25 +312,25 @@ int strntoc(const char *s, int n, char *out) {
 
 	if(res <= UCHAR_MAX) {
 		if(res == 0 && s[0] != '0') //TODO: Assume we not going to write -0
-			return 0;
+			return false;
 		*out = res;
-		return 1;
+		return true;
 	}
 
-	return 0;
+	return false;
 }
 
-struct InstructionInfo* find_instruction_info(const char *instuction, size_t len, int search_type, enum InstructionArgType arg_types[MAX_ARGS_NUM])
+struct InstructionInfo* find_instruction_info(struct InstructionInfo instruction)
 {
+	const bool search_by_args = instruction.args_num >= 0;
 	int size = sizeof(asm_info)/sizeof(struct InstructionInfo);
 	for(int i = 0; i < size; ++i) {
-		int instruction_found = strncmp(instuction, asm_info[i].name, len) == 0;
-		int args_same = 1;
-                if (search_type && instruction_found) {
+		int instruction_found = strncmp(instruction.name, asm_info[i].name, strlen(asm_info[i].name)) == 0;
+		bool args_same = true;
+                if (search_by_args && instruction_found) {
 			for(int j = 0; j < asm_info[i].args_num; ++j) {
-				args_same &= (arg_types[j] == asm_info[i].arg_types[j]);
+				args_same &= (instruction.arg_types[j] == asm_info[i].arg_types[j]);
 			}
-
                 }
                 if(instruction_found && args_same) {
 			return asm_info + i;
@@ -374,7 +340,7 @@ struct InstructionInfo* find_instruction_info(const char *instuction, size_t len
 	return NULL;
 }
 
-LabelEntry* handle_label(const char *name, size_t len, struct vec_LabelEntry *label_table, int location, int jump) {
+LabelEntry* handle_label(const char *name, size_t len, int location, int jump) {
 	LabelEntry new_entry;
 	new_entry.name = (char*)malloc((len + 1) * sizeof(char));
 	if(!new_entry.name)
@@ -383,12 +349,10 @@ LabelEntry* handle_label(const char *name, size_t len, struct vec_LabelEntry *la
 	strncpy(new_entry.name, name, len);
 	new_entry.name[len] = '\0';
 
-	LabelEntry *e = find_label(new_entry.name, label_table);
+	LabelEntry *e = find_label(new_entry.name);
 	if(e) {
 		free(new_entry.name);
-		if(e->location >=0 && location >= 0) {
-			// Attempt to redeclare label
-			print_compile_error("Label is alredy declared", -1, e->name, len);
+		if(e->location >=0 && location >= 0) { // Attempt to redeclare label
 			return NULL;
 		}
 
@@ -398,7 +362,6 @@ LabelEntry* handle_label(const char *name, size_t len, struct vec_LabelEntry *la
 		else {
 			// Label used argument in jmp?
 			if(jump < 0) {
-				print_compile_error("Incorrect jump location for ", -1, e->name, len);
 			}
 			vec_push_back_char(&e->jumps, jump);
 		}
@@ -414,33 +377,18 @@ LabelEntry* handle_label(const char *name, size_t len, struct vec_LabelEntry *la
 		vec_push_back_char(&new_entry.jumps, jump);
 	}
 
-	vec_push_back_LabelEntry(label_table, new_entry);
+	vec_push_back_LabelEntry(&label_table, new_entry);
 
-	return vec_back_LabelEntry(label_table);
+	return vec_back_LabelEntry(&label_table);
 }
 
-LabelEntry* find_label(const char *name, struct vec_LabelEntry *label_table) {
-	for(int i = 0; i < label_table->size; ++i) {
-		LabelEntry *e = vec_at_LabelEntry(label_table, i);
+LabelEntry* find_label(const char *name) {
+	for(int i = 0; i < label_table.size; ++i) {
+		LabelEntry *e = vec_at_LabelEntry(&label_table, i);
 		if(strcmp(name, e->name) == 0)
 			return e;
 	}
 	return NULL;
-}
-
-void printn(const char *s, size_t n) {
-	while(n--) putchar(*s++);
-}
-
-void print_compile_error(const char *msg, int line_num, const char *word, size_t len) {
-	printf("ERROR: %s ", msg);
-	if(word)
-		printn(word, len);
-
-	if(line_num >= 0)
-		printf(" at line %d\n", line_num);
-	else
-		puts("\n");
 }
 
 void print_label_table(struct vec_LabelEntry *label_table) {

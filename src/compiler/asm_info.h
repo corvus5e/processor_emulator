@@ -14,11 +14,11 @@ enum InstructionArgType {
 #define MAX_ARGS_NUM 3
 
 typedef enum InstructionArgType arg_types_array[MAX_ARGS_NUM];
-typedef int arg_values_array[3];
+typedef int arg_values_array[MAX_ARGS_NUM];
 
 struct InstructionInfo {
 	const char *name;
-	char args_num;
+	int args_num;
 	arg_types_array arg_types;
 	char code;
 };
@@ -26,8 +26,8 @@ struct InstructionInfo {
 #define EXIT_PROGRAM -1
 
 static struct InstructionInfo asm_info[] = {
-	{"mov",  2, {REGISTER, REGISTER}, 0},
-	{"mov",  2, {REGISTER,IMMEDIATE}, 1},
+	{"mov",  2, {REGISTER, REGISTER},  0},
+	{"mov",  2, {REGISTER, IMMEDIATE}, 1},
 
 	{"add",  3, {REGISTER,REGISTER,IMMEDIATE}, 2}, // add_im
 	{"add",  3, {REGISTER,REGISTER,REGISTER},  3}, // add_reg

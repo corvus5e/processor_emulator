@@ -45,7 +45,7 @@ int test_at_home_run() {
 	int status = 0;
 	for(int i = 0; i < test_cases_list.size; ++i) {
 		TestInfo *info = vec_at_TestInfo(&test_cases_list, i);
-		printf("== Running [%s]\n", info->name);
+		printf("=== Running [%s]\n", info->name);
 		enum TestResult test_result = info->fun_ptr();
 		if(test_result == TEST_PASSED){
 			printf("%s[PASSED]%s\n", COLOR_GREEN, COLOR_NORMAL);

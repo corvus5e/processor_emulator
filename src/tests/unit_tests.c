@@ -1,17 +1,9 @@
 #include <stddef.h>
-#include <string.h>
 #include <stdbool.h>
 
 #include "tests_at_home.h"
 #include "compiler/asm_info.h"
 #include "compiler/asm_compiler.h"
-
-bool compare_arg_types(arg_types_array res, arg_types_array ref, int args_size) {
-	for(int i = 0; i < args_size; ++i) {
-		if(res[i] != ref[i]) return false;
-	}
-	return true;
-}
 
 TEST(parse_tokens)
 {
@@ -23,41 +15,40 @@ TEST(parse_tokens)
 
 	const char **curr_pos = &line;
 	for(int j = 0; j < str_types_num; ++j) {
-		struct Token t = next_token(curr_pos);
-		printf("(%.*s)\n", (int)t.len, t.str);
+		struct Token t = get_token(curr_pos);
 		EXPECT_EQ(t.type, expected_types[j]);
 	}
 
 	return TEST_PASSED;
 }
 
-TEST_DISABLED(parse_args)
+TEST(parse_ld_ins)
 {
-	const char *line = " r1, 12[r2]";
+	const char *line = "ld r1, 12[r2]\n";
 
-	char values[MAX_ARGS_NUM];
-	arg_types_array result_types;
-	arg_types_array expected_types = {REGISTER, IMMEDIATE, AT_REGISTER};
-	const int expected_args_count= 3;
-	int args_count = 0;
-	EXPECT_EQ(COMPILE_SUCCESS, parse_arguments(line, strlen(line), values, result_types, &args_count));
-	EXPECT_EQ(expected_args_count, args_count);
-	EXPECT_EQ(true, compare_arg_types(result_types, expected_types, args_count));
+	struct InstructionInfo *inst_info;
+	arg_values_array out_values;
+	struct CompileError status = parse_line(line, &inst_info, out_values);
+	if(status.error_code != COMPILE_SUCCESS) {
+		printf("Error:%s\n", status.msg);
+		return TEST_FAILED;
+	}
+
 	return TEST_PASSED;
 }
 
-TEST_DISABLED(parse_args_bad)
+TEST(parse_lsr_ins)
 {
-	const char *line = "r1, 12[r2]";
+	const char *line = "lsr r1, r2, r3\n";
 
-	char values[MAX_ARGS_NUM];
-	arg_types_array result_types;
-	arg_types_array expected_types = {REGISTER, IMMEDIATE, AT_REGISTER};
-	const int expected_args_count= 3;
-	int args_count = 0;
-	EXPECT_EQ(COMPILE_SUCCESS, parse_arguments(line, strlen(line), values, result_types, &args_count));
-	EXPECT_EQ(expected_args_count, args_count);
-	EXPECT_EQ(false, compare_arg_types(result_types, expected_types, args_count));
+	struct InstructionInfo *inst_info;
+	arg_values_array out_values;
+	struct CompileError status = parse_line(line, &inst_info, out_values);
+	if(status.error_code != COMPILE_SUCCESS) {
+		printf("Error:%s\n", status.msg);
+		return TEST_FAILED;
+	}
+
 	return TEST_PASSED;
 }
 
