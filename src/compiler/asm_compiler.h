@@ -33,6 +33,12 @@ struct Token {
 	const char *str;
 };
 
+typedef struct LabelEntry {
+	char *name;
+	word location;
+	struct vec_word jumps;
+} LabelEntry;
+
 struct CompileError {
 	int error_code;
 	int column;
@@ -44,11 +50,9 @@ int compile_program(const char *file_name, struct vec_word *program);
 /*
  * `line_text` should end with newline and null-terminating character
  * */
-struct CompileError parse_line(const char *line_text, struct InstructionInfo **found_instruction, arg_values_array out_args);
+struct CompileError parse_line(const char *line_text, struct InstructionInfo **found_instruction, arg_values_array out_args, int line_num);
 
-struct CompileError parse_arg(const char **curr_pos, enum InstructionArgType *out_type, int* out_value);
-
-bool parse_register(int* out_value);
+struct CompileError parse_arg(const char **curr_pos, enum InstructionArgType *out_type, int* out_value, int line_num);
 
 bool isLabel(const char *word, size_t len);
 
@@ -57,6 +61,17 @@ bool isLabel(const char *word, size_t len);
  * If negative value passed into `instruction.args_num`, `arg_types` is not participated in search.
  * */
 struct InstructionInfo* find_instruction_info(struct InstructionInfo search_pattern);
+
+struct CompileError declare_label(const char *name, size_t len, word location);
+
+void add_lable_jump(const char *name, size_t len, word jump_from);
+
+/* Finds a label with `name` in `label_table`.
+ * Returns NULL is not found.
+ * */
+LabelEntry* find_label(const char *name, size_t len);
+
+LabelEntry* add_label(const char *name, size_t len);
 
 struct Token get_token(const char **curr_pos);
 

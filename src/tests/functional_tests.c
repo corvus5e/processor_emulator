@@ -9,10 +9,10 @@
 
 #define SAMPLE(x) SAMPLES_DIR "/" x
 
-TEST_DISABLED(sample)
+TEST(sample)
 {
 	struct vec_word program;
-	compile_program(SAMPLE("sample.asm"), &program);
+	EXPECT_EQ(compile_program(SAMPLE("sample.asm"), &program), COMPILE_SUCCESS);
 	return 0;
 }
 

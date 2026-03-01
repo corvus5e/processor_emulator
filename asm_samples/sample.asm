@@ -1,2 +1,3 @@
-label:
-b label
+.label:
+b .label
+

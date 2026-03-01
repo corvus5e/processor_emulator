@@ -28,7 +28,7 @@ TEST(parse_ld_ins)
 
 	struct InstructionInfo *inst_info;
 	arg_values_array out_values;
-	struct CompileError status = parse_line(line, &inst_info, out_values);
+	struct CompileError status = parse_line(line, &inst_info, out_values, 0);
 	if(status.error_code != COMPILE_SUCCESS) {
 		printf("Error:%s\n", status.msg);
 		return TEST_FAILED;
@@ -43,7 +43,7 @@ TEST(parse_lsr_ins)
 
 	struct InstructionInfo *inst_info;
 	arg_values_array out_values;
-	struct CompileError status = parse_line(line, &inst_info, out_values);
+	struct CompileError status = parse_line(line, &inst_info, out_values, 0);
 	if(status.error_code != COMPILE_SUCCESS) {
 		printf("Error:%s\n", status.msg);
 		return TEST_FAILED;
