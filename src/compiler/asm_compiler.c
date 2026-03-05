@@ -22,24 +22,13 @@
 /* Global label table*/
 struct vec_LabelEntry label_table;
 
-/* Replaces labels with needed addresses for jmp instructions in compiled program
- * Returns 1 if succeeded, 0 otherwise
- * */
-int resolve_labels(struct vec_word *out_program, struct vec_LabelEntry *label_table);
-
-/* Tries to add label into the `label_table`.
- * On success returns pointer to newly added entry, otherwise returns NULL.
- * `jump` is a location of where the label is used.
- * */
-LabelEntry* handle_label(const char *name, size_t len, int location, int jump);
-
 void print_label_table(struct vec_LabelEntry *label_table);
-
-
-/* --- Implementation ---- */
 
 int compile_program(const char *file_name, struct vec_word *program)
 {
+	if(!program)
+		return COMPILE_ERROR;
+
 	FILE *f = fopen(file_name, "r");
 	if(!f){
 		printf("ERROR: failed to open file %s\n", file_name);
@@ -50,7 +39,7 @@ int compile_program(const char *file_name, struct vec_word *program)
 	char *line = NULL;
 	size_t n;
 	ssize_t nread;
-	int code_line_num = 0;
+	int instruction_num = 0;
 	int text_line_num = 1;
 	vec_init_LabelEntry(&label_table);
 	struct InstructionInfo *inst_info;
@@ -64,16 +53,20 @@ int compile_program(const char *file_name, struct vec_word *program)
 		}
 
 		if (isLabel(t.str, t.len)) {
-			if ((status = declare_label(t.str, t.len-1, code_line_num))
+			if ((status = declare_label(t.str, t.len-1, instruction_num))
 				.error_code == COMPILE_SUCCESS)
 				continue;
 			else
 				break;
 		}
 
-		status = parse_line(line, &inst_info, arg_value, code_line_num++);
+		status = parse_line(line, &inst_info, arg_value, instruction_num++);
 		if (status.error_code == COMPILE_ERROR)
 			break;
+		
+		word encoded_instruction = 0;
+		status = encode_instruction(inst_info, arg_value, &encoded_instruction);
+		vec_push_back_word(program, encoded_instruction);
 	}
 
 	free(line);
@@ -87,10 +80,39 @@ int compile_program(const char *file_name, struct vec_word *program)
 	//vec_push_back_word(program, -1); //TODO: MOVE EXIT_PROGRAM to accessible place
 	print_label_table(&label_table);
 
-	return COMPILE_SUCCESS;//resolve_labels(program, &label_table);
+	return resolve_labels(program, &label_table);
 }
 
-struct CompileError parse_line(const char *line_text, struct InstructionInfo **found_instruction, arg_values_array out_args, int line_num) {
+struct CompileError encode_instruction(struct InstructionInfo *instruction, arg_values_array out_args, word *result) {
+	struct CompileError status = {.error_code = COMPILE_ERROR, .msg = "Bad encode_instruction call"};
+	if (!instruction || !result) 
+		return status;
+
+	*result = instruction->code << OPCODE_SHIFT;
+
+	switch (instruction->args_num) {
+		case 0: break;
+		case 1: return encode_instruction_one_arg(result, out_args[0]);
+		case 2: break;
+		case 3: break;
+	}
+	status.error_code = COMPILE_SUCCESS;
+	return status;
+}
+
+struct CompileError encode_instruction_one_arg(word *instructio_with_opcode, word offset) {
+	struct CompileError status = {.error_code = COMPILE_ERROR, .msg = "Bad encode_instruction_one_arg call"};
+	if (abs(offset) > MAX_OFFSET) {
+		status.msg = "Too big offset value";
+		return status;
+	}
+	offset &= 0b00000111111111111111111111111111;
+	*instructio_with_opcode |= offset;
+	status.error_code = COMPILE_SUCCESS;
+	return status;
+}
+
+struct CompileError parse_line(const char *line_text, struct InstructionInfo **found_instruction, arg_values_array out_args, int instruction_num) {
 	const char *curr_pos = line_text;
 	struct Token t = get_token(&curr_pos);
 
@@ -108,7 +130,7 @@ struct CompileError parse_line(const char *line_text, struct InstructionInfo **f
 	for (; search_pattern.args_num < 3; ++search_pattern.args_num) {
 		if ((status = parse_arg(&curr_pos,
 					search_pattern.arg_types + search_pattern.args_num,
-					out_args + search_pattern.args_num, line_num))
+					out_args + search_pattern.args_num, instruction_num))
 			.error_code == COMPILE_ERROR) {
 			return status;
 		}
@@ -290,7 +312,12 @@ int resolve_labels(struct vec_word *out_program, struct vec_LabelEntry *label_ta
 		}
 
 		for(int j = 0; j < e->jumps.size; ++j) {
-			*vec_at_word(out_program, *vec_at_word(&e->jumps, j)) = e->location;
+			word from = *vec_at_word(&e->jumps, j);
+			word to = e->location;
+			word diff = to - from;
+			word instruction = *vec_at_word(out_program, from);
+			encode_instruction_one_arg(&instruction, diff);
+			*vec_at_word(out_program, from) = instruction;
 		}
 	}
 	return COMPILE_SUCCESS;

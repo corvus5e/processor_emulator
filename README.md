@@ -54,14 +54,15 @@ The `sbn` command is added to do Exercise 1.7 and make sure it works.
 _asm_samples_ contains a program which calculates a factorial of a number (only 5! max as emulator is 8bit) using only `sbn` command
 
 ## TODO:
-The Chapter 3 introduces the SimpleRisc ISA for 32-bit processor  
-- [ ] Change current ISA to _SimpleRisc_ for asm compiler
+The Chapter 3 introduces the SimpleRisc ISA for 32-bit processor
 - [ ] Migrate to 32-bit word
-- [ ] Add mandatory '.' before label
 
 ### Local TODO:
 - [x] Add tests for each group of instructions as in the book
 - [ ] Encode 1 arg instruction in 32-bit format
+- [ ] Add support of hex constants
+- [ ] Add call and ret functions (page 114)
+- [ ] Go back to loading 32 bit number into a register and modifiers (Chapter 3)
+- [ ] Add examples 29, 30, 31
 
 - [ ] Add more tests with value checks and other expressions
-- [ ] Mirgate to this function in translate line

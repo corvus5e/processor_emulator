@@ -9,10 +9,25 @@
 
 #define SAMPLE(x) SAMPLES_DIR "/" x
 
+void print_program(struct vec_word *program) {
+	for(int i = 0; i < program->size; ++i) {
+		word inst = *vec_at_word(program, i);
+		//TODO: Aka decode:
+		int opcode = (inst >> OPCODE_SHIFT) & 0b00000000000000000000000000011111;
+		int tmp = (inst << OPCODE_LEN);
+		int mask = tmp < 0 ? 0xFFFFFFFF : 0x00000;
+		int offset = (tmp >> OPCODE_LEN) | (mask << OPCODE_LEN);
+		printf("[%d|%d]", opcode, offset);
+	}
+	printf("\n");
+}
+
 TEST(sample)
 {
 	struct vec_word program;
+	vec_init_word(&program);
 	EXPECT_EQ(compile_program(SAMPLE("sample.asm"), &program), COMPILE_SUCCESS);
+	print_program(&program);
 	return 0;
 }
 
