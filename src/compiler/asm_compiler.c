@@ -83,7 +83,7 @@ int compile_program(const char *file_name, struct vec_word *program)
 	return resolve_labels(program, &label_table);
 }
 
-struct CompileError encode_instruction(struct InstructionInfo *instruction, arg_values_array out_args, word *result) {
+struct CompileError encode_instruction(struct InstructionInfo *instruction, arg_values_array args, word *result) {
 	struct CompileError status = {.error_code = COMPILE_ERROR, .msg = "Bad encode_instruction call"};
 	if (!instruction || !result) 
 		return status;
@@ -92,23 +92,44 @@ struct CompileError encode_instruction(struct InstructionInfo *instruction, arg_
 
 	switch (instruction->args_num) {
 		case 0: break;
-		case 1: return encode_instruction_one_arg(result, out_args[0]);
+		case 1: return encode_instruction_one_arg(result, args[0]);
 		case 2: break;
-		case 3: break;
+		case 3: {
+			//NOTE: Handle ls, st instructions
+			bool is_immediate = instruction->arg_types[2] == IMMEDIATE;
+			return encode_instruction_three_arg(result, is_immediate, args);
+		};
 	}
 	status.error_code = COMPILE_SUCCESS;
 	return status;
 }
 
-struct CompileError encode_instruction_one_arg(word *instructio_with_opcode, word offset) {
+struct CompileError encode_instruction_one_arg(word *instruction_with_opcode, word offset) {
 	struct CompileError status = {.error_code = COMPILE_ERROR, .msg = "Bad encode_instruction_one_arg call"};
 	if (abs(offset) > MAX_OFFSET) {
 		status.msg = "Too big offset value";
 		return status;
 	}
 	offset &= ONE_ARG_MASK;
-	*instructio_with_opcode |= offset;
+	*instruction_with_opcode |= offset;
 	status.error_code = COMPILE_SUCCESS;
+	return status;
+}
+
+struct CompileError encode_instruction_three_arg(word *instruction_with_opcode, bool is_immediate, arg_values_array args) {
+	struct CompileError status = {.error_code = COMPILE_SUCCESS, .msg = "Bad encode_instruction_three_arg call"};
+	if(is_immediate) {
+		*instruction_with_opcode |= I_BIT_MASK;
+		*instruction_with_opcode |= (args[2] & 0x0000FFFF);
+	}
+	else {
+		*instruction_with_opcode |= (args[2] & 0x0000000F) << SRC_REG_2_SHIFT;
+	}
+
+	//TODO: What with modifiers bif, for now default is used
+	//TODO: Handle for regs to be < 16 during parsing stage
+	*instruction_with_opcode |= (args[0] & 0x0000000F) << DST_REG_SHIFT;
+	*instruction_with_opcode |= (args[1] & 0x0000000F) << SRC_REG_1_SHIFT;
 	return status;
 }
 

@@ -10,17 +10,11 @@
 #define SAMPLE(x) SAMPLES_DIR "/" x
 
 void decode_program(struct vec_word *program) {
+	char buf[50]; // Should be enough for one instruction;
 	for(int i = 0; i < program->size; ++i) {
 		word inst = *vec_at_word(program, i);
-		word opcode;
-		arg_values_array args;
-		size_t arg_num = 0;
-		decode_instruction(inst, &opcode, args, &arg_num);
-		printf("%s", opcode_to_str(opcode));
-		for(int j = 0; j < arg_num; ++j) {
-			printf(" %d ", args[j]);
-		}
-		printf("\n");
+		disassembly(inst, buf);
+		printf("%s", buf);
 	}
 }
 

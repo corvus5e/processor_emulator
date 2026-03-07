@@ -23,6 +23,6 @@ bool run_program(char *program, size_t len, struct Processor * const processor);
 
 char* opcode_to_str(word opcode);
 
-void decode_instruction(word instruction, word *opcode, word out_args[3], size_t *args_num);
+void disassembly(word instruction, char *buf);
 
 #endif

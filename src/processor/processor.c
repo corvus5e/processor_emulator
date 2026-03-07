@@ -19,20 +19,63 @@ bool run_program(char *program, size_t len, struct Processor * const p) {
 	return 0;
 }
 
-void decode_instruction(word instruction, word *opcode, word out_args[3], size_t *args_num) {
-	*opcode = instruction & OPCODE_MASK;
-	switch (*opcode) {
-	case BEQ_OPCODE:
-	case BGT_OPCODE:
-	case B_OPCODE:
-	case CALL_OPCODE:
-	case RET_OPCODE: {
-		// Decode offset from one arg instruction
+void disassembly(word instruction, char *buf) {
+	word opcode = instruction & OPCODE_MASK;
+	size_t args_num = 0;
+	const char *inst_name = NULL;
+
+	switch(opcode) {
+	case NOP_OPCODE: inst_name = "nop"; args_num = 0; break;
+
+	case BEQ_OPCODE: inst_name = "beq"; args_num = 1; break;
+	case BGT_OPCODE: inst_name = "bgt"; args_num = 1; break;
+	case B_OPCODE:   inst_name = "b";   args_num = 1; break;
+	case CALL_OPCODE:inst_name = "call";args_num = 1; break;
+	case RET_OPCODE: inst_name = "ret"; args_num = 1; break;
+
+	case CMP_OPCODE: inst_name = "cmp"; args_num = 2; break;
+	case NOT_OPCODE: inst_name = "not"; args_num = 2; break;
+	case MOV_OPCODE: inst_name = "mov"; args_num = 2; break;
+
+	case ADD_OPCODE: inst_name = "add"; args_num = 3; break;
+	case SUB_OPCODE: inst_name = "sub"; args_num = 3; break;
+	case MUL_OPCODE: inst_name = "mul"; args_num = 3; break;
+	case DIV_OPCODE: inst_name = "div"; args_num = 3; break;
+	case MOD_OPCODE: inst_name = "mod"; args_num = 3; break;
+	case AND_OPCODE: inst_name = "and"; args_num = 3; break;
+	case OR_OPCODE:  inst_name = "or";  args_num = 3; break;
+	case LSR_OPCODE: inst_name = "lsr"; args_num = 3; break;
+	case ASR_OPCODE: inst_name = "asr"; args_num = 3; break;
+	case LD_OPCODE:  inst_name = "ld";  args_num = 3; break;
+	case ST_OPCODE:  inst_name = "st";  args_num = 3; break;
+
+	}
+	switch (args_num) {
+	case 1: {
 		// Right shift shoud extend sign
-		out_args[0] = ((instruction << OPCODE_LEN) >> OPCODE_LEN);
-		*args_num   = 1;
+		word offset = ((instruction << OPCODE_LEN) >> OPCODE_LEN);
+		sprintf(buf, "%s %d\n", inst_name, offset);
+	} break;
+	case 3: {
+		const bool is_immediate = instruction & I_BIT_MASK;
+		word dst_reg = ((instruction & DST_REG_MASK) >> DST_REG_SHIFT);
+		word src_reg_1 = ((instruction & SRC_REG_1_MASK) >> SRC_REG_1_SHIFT);
+		word src_val_2 = 0;
+		const char *fmt = "%s r%d, r%d, r%d\n";
+
+		if (is_immediate) {
+			src_val_2 = (instruction & IMMEDIATE_3_MASK);
+			fmt = "%s r%d, r%d, %d\n";
+		}
+		else {
+			src_val_2 = ((instruction & SRC_REG_2_MASK) >> SRC_REG_2_SHIFT);
+		}
+
+		sprintf(buf, fmt, inst_name, dst_reg, src_reg_1, src_val_2);
+
+	} break;
 	}
-	}
+
 }
 
 char* opcode_to_str(word opcode) {
