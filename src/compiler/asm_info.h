@@ -2,7 +2,7 @@
 #define _ASM_INFO_H_
 
 #include <stdint.h>
-#include <common/simple_risc_types.h>
+#include <common/simple_risc.h>
 
 enum InstructionArgType {
 	NONE = 0,
@@ -26,68 +26,63 @@ struct InstructionInfo {
 
 #define EXIT_PROGRAM -1
 
-#define WORD_LEN 32
-#define OPCODE_SHIFT 27
-#define OPCODE_LEN 5
-#define MAX_OFFSET 1 << 26
-
 /* Table 3.10 from Chapter 3 */
 static struct InstructionInfo asm_info[] = {
 
-	{"add",  3, {REGISTER,REGISTER,IMMEDIATE},    0}, // add_im
-	{"add",  3, {REGISTER,REGISTER,REGISTER},     0}, // add_reg
+	{"add",  3, {REGISTER,REGISTER,IMMEDIATE},    ADD_OPCODE},
+	{"add",  3, {REGISTER,REGISTER,REGISTER},     ADD_OPCODE},
 
-	{"sub",  3, {REGISTER,REGISTER,IMMEDIATE},    1}, // sub_im
-	{"sub",  3, {REGISTER,REGISTER,REGISTER},     1}, // sub_reg
+	{"sub",  3, {REGISTER,REGISTER,IMMEDIATE},    SUB_OPCODE},
+	{"sub",  3, {REGISTER,REGISTER,REGISTER},     SUB_OPCODE},
 
-	{"mul",  3, {REGISTER,REGISTER,IMMEDIATE},    2},
-	{"mul",  3, {REGISTER,REGISTER,REGISTER},     2},
+	{"mul",  3, {REGISTER,REGISTER,IMMEDIATE},    MUL_OPCODE},
+	{"mul",  3, {REGISTER,REGISTER,REGISTER},     MUL_OPCODE},
 
-	{"div",  3, {REGISTER,REGISTER,IMMEDIATE},    3},
-	{"div",  3, {REGISTER,REGISTER,REGISTER},     3},
+	{"div",  3, {REGISTER,REGISTER,IMMEDIATE},    DIV_OPCODE},
+	{"div",  3, {REGISTER,REGISTER,REGISTER},     DIV_OPCODE},
 
-	{"mod",  3, {REGISTER,REGISTER,IMMEDIATE},    4},
-	{"mod",  3, {REGISTER,REGISTER,REGISTER},     4},
+	{"mod",  3, {REGISTER,REGISTER,IMMEDIATE},    MOD_OPCODE},
+	{"mod",  3, {REGISTER,REGISTER,REGISTER},     MOD_OPCODE},
 
-	{"cmp",  2, {REGISTER,IMMEDIATE},             5},
-	{"cmp",  2, {REGISTER,REGISTER},              5},
+	{"cmp",  2, {REGISTER,IMMEDIATE},             CMP_OPCODE},
+	{"cmp",  2, {REGISTER,REGISTER},              CMP_OPCODE},
 
-	{"and",  3, {REGISTER,REGISTER,REGISTER},     6},
-	{"and",  3, {REGISTER,REGISTER,IMMEDIATE},    6},
+	{"and",  3, {REGISTER,REGISTER,REGISTER},     AND_OPCODE},
+	{"and",  3, {REGISTER,REGISTER,IMMEDIATE},    AND_OPCODE},
 
-	{"or",   3, {REGISTER,REGISTER,REGISTER},     7},
-	{"or",   3, {REGISTER,REGISTER,IMMEDIATE},    7},
+	{"or",   3, {REGISTER,REGISTER,REGISTER},     OR_OPCODE},
+	{"or",   3, {REGISTER,REGISTER,IMMEDIATE},    OR_OPCODE},
 
-	{"not",  2, {REGISTER,REGISTER},              8},
-	{"not",  2, {REGISTER,IMMEDIATE},             8},
+	{"not",  2, {REGISTER,REGISTER},              NOT_OPCODE},
+	{"not",  2, {REGISTER,IMMEDIATE},             NOT_OPCODE},
 
-	{"mov",  2, {REGISTER, REGISTER},             9},
-	{"mov",  2, {REGISTER, IMMEDIATE},            9},
+	{"mov",  2, {REGISTER,REGISTER},              MOV_OPCODE},
+	{"mov",  2, {REGISTER,IMMEDIATE},             MOV_OPCODE},
 
-	{"lsl",  3, {REGISTER,REGISTER,REGISTER},     10},
-	{"lsl",  3, {REGISTER,REGISTER,IMMEDIATE},    10},
+	{"lsl",  3, {REGISTER,REGISTER,REGISTER},     LSL_OPCODE},
+	{"lsl",  3, {REGISTER,REGISTER,IMMEDIATE},    LSL_OPCODE},
 
-	{"lsr",  3, {REGISTER,REGISTER,REGISTER},     11},
-	{"lsr",  3, {REGISTER,REGISTER,IMMEDIATE},    11},
+	{"lsr",  3, {REGISTER,REGISTER,REGISTER},     LSR_OPCODE},
+	{"lsr",  3, {REGISTER,REGISTER,IMMEDIATE},    LSR_OPCODE},
 
-	{"asr",  3, {REGISTER,REGISTER,REGISTER},     12},
-	{"asr",  3, {REGISTER,REGISTER,IMMEDIATE},    12},
+	{"asr",  3, {REGISTER,REGISTER,REGISTER},     ASR_OPCODE},
+	{"asr",  3, {REGISTER,REGISTER,IMMEDIATE},    ASR_OPCODE},
 
-	{"nop",  0, {},                               13},
+	{"nop",  0, {},                               NOP_OPCODE},
 
-	{"ld",   3, {REGISTER,IMMEDIATE,AT_REGISTER}, 14},
+	{"ld",   3, {REGISTER,IMMEDIATE,AT_REGISTER}, LD_OPCODE},
 
-	{"st",   3, {REGISTER,IMMEDIATE,AT_REGISTER}, 15},
+	{"st",   3, {REGISTER,IMMEDIATE,AT_REGISTER}, ST_OPCODE},
 
-	{"beq",  1, {LOCATION},                       16},
+	{"beq",  1, {LOCATION},                       BEQ_OPCODE},
 
-	{"bgt",  1, {LOCATION},                       17},
+	{"bgt",  1, {LOCATION},                       BGT_OPCODE},
 
-	{"b",    1, {LOCATION},                       18},
+	{"b",    1, {LOCATION},                       B_OPCODE},
 
-	{"call", 1, {LOCATION},                       19},
+	{"call", 1, {LOCATION},                       CALL_OPCODE},
 
-	{"ret",  1, {LOCATION},                       20},
+	{"ret",  1, {LOCATION},                       RET_OPCODE},
 
 
 	// {"sbn",  3, {REGISTER,IMMEDIATE,LOCATION}, 29}, // sbn_im

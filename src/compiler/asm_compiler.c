@@ -88,7 +88,7 @@ struct CompileError encode_instruction(struct InstructionInfo *instruction, arg_
 	if (!instruction || !result) 
 		return status;
 
-	*result = instruction->code << OPCODE_SHIFT;
+	*result = instruction->code;
 
 	switch (instruction->args_num) {
 		case 0: break;
@@ -106,7 +106,7 @@ struct CompileError encode_instruction_one_arg(word *instructio_with_opcode, wor
 		status.msg = "Too big offset value";
 		return status;
 	}
-	offset &= 0b00000111111111111111111111111111;
+	offset &= ONE_ARG_MASK;
 	*instructio_with_opcode |= offset;
 	status.error_code = COMPILE_SUCCESS;
 	return status;

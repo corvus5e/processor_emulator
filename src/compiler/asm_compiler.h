@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-#include "common/simple_risc_types.h"
+#include "common/simple_risc.h"
 
 #define T word
 #include "common/vector.h"
@@ -48,7 +48,7 @@ int compile_program(const char *file_name, struct vec_word *program);
 
 struct CompileError encode_instruction(struct InstructionInfo *instruction, arg_values_array out_args, word *out_compiled_instruction);
 
-struct CompileError encode_instruction_one_arg(word *instructio_with_opcode, word offset);
+struct CompileError encode_instruction_one_arg(word *instruction_with_opcode, word offset);
 
 /*
  * `line_text` should end with newline and null-terminating character
