@@ -19,12 +19,36 @@ bool run_program(char *program, size_t len, struct Processor * const p) {
 	return 0;
 }
 
-void disassembly(word instruction, char *buf) {
-	word opcode = instruction & OPCODE_MASK;
-	size_t args_num = 0;
-	const char *inst_name = NULL;
+void decode_instruction(word instruction, struct DecodedInstruction *result){
+	/* Speculative Decode */
+	result->opcode = instruction & OPCODE_MASK;
+	result->dst_reg = ((instruction & DST_REG_MASK) >> DST_REG_SHIFT);
+	result->src_reg_1 = ((instruction & SRC_REG_1_MASK) >> SRC_REG_1_SHIFT);
+	result->src_reg_2 = ((instruction & SRC_REG_2_MASK) >> SRC_REG_2_SHIFT);
+	result->offset = ((instruction << OPCODE_LEN) >> OPCODE_LEN);
+	result->is_immediate = instruction & I_BIT_MASK;
+	word modifiers = instruction & MODIFIERS_BITS_MASK;
 
-	switch(opcode) {
+	switch (modifiers) {
+	case MODIFIERS_BITS_DEFAULT_MASK:
+		result->imm_val = ((instruction & IMMEDIATE_3_MASK) << 16) >> 16;
+		break;
+	case MODIFIERS_BITS_H_MASK:
+		result->imm_val = (instruction & IMMEDIATE_3_MASK) << 16;
+		break;
+	case MODIFIERS_BITS_U_MASK:
+		result->imm_val = (instruction & IMMEDIATE_3_MASK);
+		break;
+	}
+}
+
+void disassembly(word instruction, char *buf) {
+	struct DecodedInstruction di;
+	decode_instruction(instruction, &di);
+	const char *inst_name = NULL;
+	size_t args_num = 0;
+
+	switch(di.opcode) {
 	case NOP_OPCODE: inst_name = "nop"; args_num = 0; break;
 
 	case BEQ_OPCODE: inst_name = "beq"; args_num = 1; break;
@@ -50,59 +74,15 @@ void disassembly(word instruction, char *buf) {
 	case ST_OPCODE:  inst_name = "st";  args_num = 3; break;
 
 	}
+
 	switch (args_num) {
 	case 1: {
-		// Right shift shoud extend sign
-		word offset = ((instruction << OPCODE_LEN) >> OPCODE_LEN);
-		sprintf(buf, "%s %d\n", inst_name, offset);
+		sprintf(buf, "%s %d\n", inst_name, di.offset);
 	} break;
 	case 3: {
-		const bool is_immediate = instruction & I_BIT_MASK;
-		word dst_reg = ((instruction & DST_REG_MASK) >> DST_REG_SHIFT);
-		word src_reg_1 = ((instruction & SRC_REG_1_MASK) >> SRC_REG_1_SHIFT);
-		word src_val_2 = 0;
-		const char *fmt = "%s r%d, r%d, r%d\n";
-
-		if (is_immediate) {
-			// << 16 + >> 16 shift is to extend sign bits
-			src_val_2 = ((instruction & IMMEDIATE_3_MASK) << 16) >> 16;
-			fmt = "%s r%d, r%d, %d\n";
-		}
-		else {
-			src_val_2 = ((instruction & SRC_REG_2_MASK) >> SRC_REG_2_SHIFT);
-		}
-
-		sprintf(buf, fmt, inst_name, dst_reg, src_reg_1, src_val_2);
-
+		const char* fmt = di.is_immediate ? "%s r%d, r%d, %d\n" : "%s r%d, r%d, r%d\n";
+		sprintf(buf, fmt, inst_name, di.dst_reg, di.src_reg_1, di.is_immediate ? di.imm_val : di.src_reg_2);
 	} break;
 	}
 
-}
-
-char* opcode_to_str(word opcode) {
-	switch(opcode) {
-	case ADD_OPCODE: return "add";
-	case SUB_OPCODE: return "sub";
-	case MUL_OPCODE: return "mul";
-	case DIV_OPCODE: return "div";
-	case MOD_OPCODE: return "mod";
-	case CMP_OPCODE: return "cmp";
-	case AND_OPCODE: return "and";
-	case OR_OPCODE:  return "or";
-	case NOT_OPCODE: return "not";
-	case MOV_OPCODE: return "mov";
-	case LSL_OPCODE: return "lsl";
-	case LSR_OPCODE: return "lsr";
-	case ASR_OPCODE: return "asr";
-	case NOP_OPCODE: return "nop";
-	case LD_OPCODE:  return "ld";
-	case ST_OPCODE:  return "st";
-	case BEQ_OPCODE: return "beq";
-	case BGT_OPCODE: return "bgt";
-	case B_OPCODE:   return "b";
-	case CALL_OPCODE:return "call";
-	case RET_OPCODE: return "ret";
-	}
-
-	return "unknown_instruction";
 }

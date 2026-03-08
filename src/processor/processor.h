@@ -17,11 +17,21 @@ struct Processor {
 	word    flag_GT;
 };
 
+struct DecodedInstruction {
+	word opcode;
+	uint8_t dst_reg;
+	uint8_t src_reg_1;
+	uint8_t src_reg_2;
+	bool is_immediate;
+	word imm_val;
+	word offset;
+};
+
 /* Runs the compiled program
  */
 bool run_program(char *program, size_t len, struct Processor * const processor);
 
-char* opcode_to_str(word opcode);
+void decode_instruction(word instruction, struct DecodedInstruction *result);
 
 void disassembly(word instruction, char *buf);
 
