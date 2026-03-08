@@ -17,41 +17,6 @@ The default values of both the fields are 0.
 Each instruction is encoded into a 32-bit value, and it requires 4 bytes of storage in memory.  
 Multi-byte data types such as integers are saved in the little endian format.  
 
-```
-# This is a comment
-# There are four registers in emulated processor: r0 ... r4
-#
-# Register transfer instruction mov:
-mov r1 3  # moves value 3 into register r1
-mov r1 r2 # moves value of register r2 into register r1
-
-# Arithmetic instructions:
-add r1 r2 r3 # adds value from r2 and r3 and saves result into r1
-add r1 r2 10 # adds value from r2 and immediate value 10, saves result into r1
-
-sub r1 r2 r3 # r1 <- r2 - r3
-sub r1 r2 10 # r1 <- r2 - 10
-
-mul r1 r2 r3 # r1 <- r2 * r3
-mul r1 r2 10 # r1 <- r2 * 10
-
-div r1 r2 r3 # r1 <- r2 / r3
-div r1 r2 10 # r1 <- r2 / 10
-
-mod r1 r2 r3 # r1 <- r2 mod r3
-mod r1 r2 10 # r1 <- r2 mod 10
-
-cmp r1 r2    # compares values from registers set flags.E(equal) and flags.GT(greater than)
-cmp r1 10    # compares value from r1 and immediate value 10
-
-sbn r0 5 label  # Subtructs 5 from r0 and jumps to label if r0 is negative
-sbn r0 r1 label # Subtructs r1 from r0 and jumps to label if r0 is negative
-sbn r0 5 _      # Subtructs 5 from r0 and jumps to the next commnad if negative (so it no jump actually)
-sbn r0 r1 _     # Subtructs r1 from r0 and jumps to the next commnad
-```
-
-The `sbn` command is added to do Exercise 1.7 and make sure it works.  
-_asm_samples_ contains a program which calculates a factorial of a number (only 5! max as emulator is 8bit) using only `sbn` command
 
 ## TODO:
 The Chapter 3 introduces the SimpleRisc ISA for 32-bit processor
