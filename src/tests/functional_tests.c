@@ -24,7 +24,7 @@ TEST(sample)
 	vec_init_word(&program);
 	EXPECT_EQ(compile_program(SAMPLE("sample.asm"), &program), COMPILE_SUCCESS);
 	decode_program(&program);
-	return 0;
+	return TEST_PASSED;
 }
 
 TEST(exmaple_26) // mov, mul, sub instructions

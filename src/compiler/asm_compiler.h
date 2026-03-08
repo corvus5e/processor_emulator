@@ -91,6 +91,6 @@ void unget_token(struct Token);
  * Returns 1 is succeed to convert and stores result in `out`,
  * otherwise returns 0
  * */
-bool strntoc(const char *s, int n, int *out);
+int strntoi(const char *s, int n, int *out);
 
 #endif

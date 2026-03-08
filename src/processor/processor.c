@@ -64,7 +64,8 @@ void disassembly(word instruction, char *buf) {
 		const char *fmt = "%s r%d, r%d, r%d\n";
 
 		if (is_immediate) {
-			src_val_2 = (instruction & IMMEDIATE_3_MASK);
+			// << 16 + >> 16 shift is to extend sign bits
+			src_val_2 = ((instruction & IMMEDIATE_3_MASK) << 16) >> 16;
 			fmt = "%s r%d, r%d, %d\n";
 		}
 		else {

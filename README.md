@@ -58,12 +58,6 @@ The Chapter 3 introduces the SimpleRisc ISA for 32-bit processor
 - [ ] Migrate to 32-bit word
 
 ### Local TODO:
-- [x] Add tests for each group of instructions as in the book
-- [x] Encode 1 arg instruction in 32-bit format
-- [ ] Parse negative immediates
-- [ ] Add support of hex constants
 - [ ] Add call and ret functions (page 114)
 - [ ] Go back to loading 32 bit number into a register and modifiers (Chapter 3)
 - [ ] Add examples 29, 30, 31
-
-- [ ] Add more tests with value checks and other expressions

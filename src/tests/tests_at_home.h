@@ -80,13 +80,17 @@ int test_at_home_run() {
 
 #define TEST_DISABLED(test_name) \
 	enum TestResult PREFIX(TEST_, test_name)(void); \
-	enum TestResult PREFIX(TEST_, test_name)(void) \
+	enum TestResult PREFIX(TEST_, test_name)(void)
 
-#define EXPECT_EQ(a, b) if ((a) != (b)) \
-{ \
-	printf("== Not equal: %d != %d\n", (a), (b)); \
-	return TEST_FAILED; \
-}
-
+#define EXPECT_EQ(a, b)                                                        \
+	{                                                                      \
+		int l = (a);                                                   \
+		int r = (b);                                                   \
+		if (l != b) {                                                  \
+			printf("== Not equal: %d != %d\n", l, r);              \
+			printf("%s is %d\n%s is %d\n", #a, l, #b, r);          \
+			return TEST_FAILED;                                    \
+		}                                                              \
+	}
 
 #endif

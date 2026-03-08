@@ -1,5 +1,6 @@
 #include "asm_compiler.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -43,7 +44,7 @@ int compile_program(const char *file_name, struct vec_word *program)
 	int text_line_num = 1;
 	vec_init_LabelEntry(&label_table);
 	struct InstructionInfo *inst_info;
-	arg_values_array arg_value;
+	arg_values_array arg_value = {0};
 	struct Token t;
 
 	for (; (nread = getline(&line, &n, f)) != -1; ++text_line_num) {
@@ -134,6 +135,7 @@ struct CompileError encode_instruction_three_arg(word *instruction_with_opcode, 
 }
 
 struct CompileError parse_line(const char *line_text, struct InstructionInfo **found_instruction, arg_values_array out_args, int instruction_num) {
+	//TODO: Token could be taken from previous line from buffer, need to clear ?
 	const char *curr_pos = line_text;
 	struct Token t = get_token(&curr_pos);
 
@@ -203,7 +205,7 @@ struct CompileError parse_arg(const char **curr_pos, enum InstructionArgType *ou
 			status.msg = "Failed to parse at registet argument. Not a register";
 			return status;
 		}
-		if (!strntoc(t.str + 1, t.len - 1, out_value)) {
+		if (!strntoi(t.str + 1, t.len - 1, out_value)) {
 			status.msg = "Failed to parse register argument";
 			return status;
 		}
@@ -216,14 +218,14 @@ struct CompileError parse_arg(const char **curr_pos, enum InstructionArgType *ou
 	}
 
 	if(t.type == WORD) {
-		if(isdigit(t.str[0])) {
-			if (!strntoc(t.str, t.len, out_value)) {
+		if(isdigit(t.str[0]) || t.str[0] == '-') {
+			if (!strntoi(t.str, t.len, out_value)) {
 				status.msg = "Failed to parse immediate argument";
 				return status;
 			}
 			*out_type = IMMEDIATE;
 		} else if (t.str[0] == 'r') {
-			if (!strntoc(t.str + 1, t.len - 1, out_value)) {
+			if (!strntoi(t.str + 1, t.len - 1, out_value)) {
 				status.msg = "Failed to parse register argument";
 				return status;
 			}
@@ -344,26 +346,18 @@ int resolve_labels(struct vec_word *out_program, struct vec_LabelEntry *label_ta
 	return COMPILE_SUCCESS;
 }
 
-bool strntoc(const char *s, int n, int *out) {
-	
-	char *tmp = (char*)malloc((n + 1)*sizeof(char));
-	if(!tmp) {
-		return false;
+int strntoi(const char *s, int n, int *out) {
+	static char buf[50]; //Should be enough
+
+	strncpy(buf, s, n);
+	buf[n] = '\0';
+	char *end;
+	errno = 0;
+	*out = strtol(buf, &end, 0);
+	if(end == buf || errno == ERANGE) {
+		return 0;
 	}
-
-	strncpy(tmp, s, n);
-	tmp[n] = '\0';
-	int res = atoi(tmp);
-	free(tmp);
-
-	if(res <= UCHAR_MAX) {
-		if(res == 0 && s[0] != '0') //TODO: Assume we not going to write -0
-			return false;
-		*out = res;
-		return true;
-	}
-
-	return false;
+	return 1;
 }
 
 struct InstructionInfo* find_instruction_info(struct InstructionInfo instruction)
