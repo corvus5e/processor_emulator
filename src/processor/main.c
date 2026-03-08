@@ -1,4 +1,3 @@
-#include "emulator.h"
 #include <stdio.h>
 
 int main(int argc, char *argv[])
@@ -8,6 +7,5 @@ int main(int argc, char *argv[])
 		printf("Usage: emulator.out <program.asm>\n");
 	}
 
-	struct Processor p;
-	return compile_and_run_program(argv[1], &p);
+	return 0;
 }

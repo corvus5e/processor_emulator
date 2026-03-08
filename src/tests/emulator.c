@@ -28,12 +28,11 @@ int compile_and_run_program(const char *file_name, struct Processor *processor) 
 		printf("%d|", (unsigned char)program.data[i]);
 	}
 	printf("\n");
+	return 0; //NOTE: For now compile only
 
-	struct Processor p;
-	
-	run_program(program.data, program.size, &p);
+	run_program(program.data, program.size, processor);
 
-	print_processor(&p);
+	print_processor(processor);
 
 	vec_free_char(&program);
 
@@ -49,6 +48,8 @@ void print_processor(const struct Processor *p) {
 		printf("reg[%d] = %d\n", i, p->reg[i]);
 	}
 	printf("---------------\n");
+	printf("flag.E = %d\n", p->flag_E);
+	printf("flag.GT = %d\n", p->flag_GT);
 	// for(int i = 0; i < 20; ++i){
 	// 	printf("mem %d = %d\n", i, p->mem[i]);
 	// }
