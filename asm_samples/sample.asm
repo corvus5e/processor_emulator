@@ -1,7 +1,7 @@
-b .label
-add r1, r2, -27
-add r3, r4, r5
-mul r3, r1, r2
-sub r4, r3, 50
-.label:
+#b .label
+add r1, r2, -27 #r1 = -27
+add r3, r4, r1  #r3 = -27
+mul r4, r1, 3   #r4 = -81
+sub r5, r4, 50  #r5 = -131
+#.label:
 

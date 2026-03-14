@@ -19,6 +19,7 @@ struct Processor {
 
 struct DecodedInstruction {
 	word opcode;
+	word opcode_i_bit;
 	uint8_t dst_reg;
 	uint8_t src_reg_1;
 	uint8_t src_reg_2;
@@ -27,9 +28,11 @@ struct DecodedInstruction {
 	word offset;
 };
 
-/* Runs the compiled program
- */
-bool run_program(char *program, size_t len, struct Processor * const processor);
+struct vec_word;
+
+void run_processor(struct Processor * const processor);
+
+void load_program_from_mem(struct vec_word *program, struct Processor * const processor);
 
 void decode_instruction(word instruction, struct DecodedInstruction *result);
 
