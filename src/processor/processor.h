@@ -15,6 +15,7 @@ struct Processor {
 	word    reg[REG_COUNT]; // registers
 	word    flag_E;
 	word    flag_GT;
+	word pc; //Temporary: program counter lives separately from registers
 };
 
 struct DecodedInstruction {
@@ -33,6 +34,8 @@ struct vec_word;
 void run_processor(struct Processor * const processor);
 
 void load_program_from_mem(struct vec_word *program, struct Processor * const processor);
+
+word fetch_instruction(const struct Processor*);
 
 void decode_instruction(word instruction, struct DecodedInstruction *result);
 

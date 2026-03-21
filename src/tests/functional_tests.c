@@ -23,7 +23,7 @@ TEST(sample)
 	struct vec_word program;
 	vec_init_word(&program);
 	EXPECT_EQ(compile_program(SAMPLE("sample.asm"), &program), COMPILE_SUCCESS);
-	struct Processor p;
+	struct Processor p = {};
 	load_program_from_mem(&program, &p);
 	decode_program(&program);
 	run_processor(&p);
@@ -31,6 +31,8 @@ TEST(sample)
 	EXPECT_EQ(p.reg[3], -27)
 	EXPECT_EQ(p.reg[4], -81)
 	EXPECT_EQ(p.reg[5], -131)
+	EXPECT_EQ(p.reg[6], -13)
+	EXPECT_EQ(p.mem[27], p.reg[6])
 	return TEST_PASSED;
 }
 

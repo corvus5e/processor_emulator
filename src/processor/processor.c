@@ -18,32 +18,76 @@ int init_processor(const char *program, unsigned char len, struct Processor * co
 	return 1;
 }
 
-void run_processor(struct Processor * const processor) {
-	word pc = 0;
+void run_processor(struct Processor * const p) {
 	struct DecodedInstruction di = {};
 	word instruction = 0;
 	do {
-		instruction = (word)processor->mem[pc] << 24;
-		instruction |= (word)processor->mem[pc + 1] << 16;
-		instruction |= (word)processor->mem[pc + 2] << 8;
-		instruction |= (word)processor->mem[pc + 3];
-
+		instruction = fetch_instruction(p);
 		decode_instruction(instruction, &di);
 		switch(di.opcode_i_bit) {
 		case ADD_OPCODE | I_BIT_MASK:
-			processor->reg[di.dst_reg] = processor->reg[di.src_reg_1] + di.imm_val; break;
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] + di.imm_val; break;
 		case ADD_OPCODE:
-			processor->reg[di.dst_reg] = processor->reg[di.src_reg_1] + processor->reg[di.src_reg_2]; break;
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] + p->reg[di.src_reg_2]; break;
+
 		case SUB_OPCODE | I_BIT_MASK:
-			processor->reg[di.dst_reg] = processor->reg[di.src_reg_1] - di.imm_val; break;
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] - di.imm_val; break;
 		case SUB_OPCODE:
-			processor->reg[di.dst_reg] = processor->reg[di.src_reg_1] - processor->reg[di.src_reg_2]; break;
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] - p->reg[di.src_reg_2]; break;
+
 		case MUL_OPCODE | I_BIT_MASK:
-			processor->reg[di.dst_reg] = processor->reg[di.src_reg_1] * di.imm_val; break;
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] * di.imm_val; break;
 		case MUL_OPCODE:
-			processor->reg[di.dst_reg] = processor->reg[di.src_reg_1] * processor->reg[di.src_reg_2]; break;
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] * p->reg[di.src_reg_2]; break;
+
+		case DIV_OPCODE | I_BIT_MASK:
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] / di.imm_val; break;
+		case DIV_OPCODE:
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] / p->reg[di.src_reg_2]; break;
+
+		case MOD_OPCODE | I_BIT_MASK:
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] % di.imm_val; break;
+		case MOD_OPCODE:
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] % p->reg[di.src_reg_2]; break;
+
+		case AND_OPCODE | I_BIT_MASK:
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] & di.imm_val; break;
+		case AND_OPCODE:
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] & p->reg[di.src_reg_2]; break;
+
+		case OR_OPCODE | I_BIT_MASK:
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] | di.imm_val; break;
+		case OR_OPCODE:
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] | p->reg[di.src_reg_2]; break;
+
+		case LSL_OPCODE | I_BIT_MASK:
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] << di.imm_val; break;
+		case LSL_OPCODE:
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] << p->reg[di.src_reg_2]; break;
+
+		case LSR_OPCODE | I_BIT_MASK: //TODO: Mind the sing extension
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] >> di.imm_val; break;
+		case LSR_OPCODE:
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] >> p->reg[di.src_reg_2]; break;
+
+		case ASR_OPCODE | I_BIT_MASK:
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] >> di.imm_val; break;
+		case ASR_OPCODE:
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] >> p->reg[di.src_reg_2]; break;
+
+		//TODO: Load and store 32 bit values!
+		case LD_OPCODE | I_BIT_MASK: {
+			word offset = p->reg[di.src_reg_1] + di.imm_val;
+			p->reg[di.dst_reg] = p->mem[offset]; break;
+			} break;
+
+		case ST_OPCODE | I_BIT_MASK:{
+			word offset = p->reg[di.src_reg_1] + di.imm_val;
+			p->mem[offset] = p->reg[di.dst_reg]; break;
+			} break;
 		}
-		pc += 4;
+
+		p->pc += 4;
 	}
 	while(di.opcode != END_PROGRAM);
 }
@@ -65,6 +109,14 @@ void load_program_from_mem(struct vec_word *program, struct Processor * const pr
 	}
 
 	processor->mem[program->size * n] = 0xFF; //TODO: Program end
+}
+
+word fetch_instruction(const struct Processor *p) {
+	word instruction = (word)p->mem[p->pc] << 24;
+	instruction |= (word)p->mem[p->pc + 1] << 16;
+	instruction |= (word)p->mem[p->pc + 2] << 8;
+	instruction |= (word)p->mem[p->pc + 3];
+	return instruction;
 }
 
 void decode_instruction(word instruction, struct DecodedInstruction *result){

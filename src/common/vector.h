@@ -72,4 +72,8 @@ void JOIN(vec_push_back_, T)(struct vec(T) * v, T value) {
 	v->size += 1;
 }
 
-
+#define SWAP(type, a, b) do { \
+    type temp = a;            \
+    a = b;                    \
+    b = temp;                 \
+} while (0)

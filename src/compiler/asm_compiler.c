@@ -96,8 +96,14 @@ struct CompileError encode_instruction(struct InstructionInfo *instruction, arg_
 		case 1: return encode_instruction_one_arg(result, args[0]);
 		case 2: break;
 		case 3: {
-			//NOTE: Handle ls, st instructions
+			if(instruction->code == LD_OPCODE || instruction->code == ST_OPCODE) {
+				//NOTE: for st and ld instruction we should swap imm and src_reg_1
+				//      as format is `ld r1, 10[r2]` and `st r1, 10[r2]`
+				SWAP(enum InstructionArgType, instruction->arg_types[1], instruction->arg_types[2]);
+				SWAP(int , args[1], args[2]);
+			}
 			bool is_immediate = instruction->arg_types[2] == IMMEDIATE;
+
 			return encode_instruction_three_arg(result, is_immediate, args);
 		};
 	}
