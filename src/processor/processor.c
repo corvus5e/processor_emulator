@@ -22,7 +22,7 @@ void run_processor(struct Processor * const p) {
 	struct DecodedInstruction di = {};
 	word instruction = 0;
 	do {
-		instruction = fetch_instruction(p);
+		instruction = load_word(p->mem + p->pc);
 		decode_instruction(instruction, &di);
 		switch(di.opcode_i_bit) {
 		case ADD_OPCODE | I_BIT_MASK:
@@ -75,15 +75,14 @@ void run_processor(struct Processor * const p) {
 		case ASR_OPCODE:
 			p->reg[di.dst_reg] = p->reg[di.src_reg_1] >> p->reg[di.src_reg_2]; break;
 
-		//TODO: Load and store 32 bit values!
 		case LD_OPCODE | I_BIT_MASK: {
 			word offset = p->reg[di.src_reg_1] + di.imm_val;
-			p->reg[di.dst_reg] = p->mem[offset]; break;
+			p->reg[di.dst_reg] = load_word(p->mem + offset);
 			} break;
 
 		case ST_OPCODE | I_BIT_MASK:{
 			word offset = p->reg[di.src_reg_1] + di.imm_val;
-			p->mem[offset] = p->reg[di.dst_reg]; break;
+			store_word(p->mem + offset, p->reg[di.dst_reg]);
 			} break;
 		}
 
@@ -96,27 +95,27 @@ void load_program_from_mem(struct vec_word *program, struct Processor * const pr
 	for(int i = 0; i < REG_COUNT; ++i)
 		processor->reg[i] = 0;
 
-	const int n = sizeof(word);
 	for(int i = 0; i < program->size; ++i) {
-		int offset = n*i;
 		word instruction = *vec_at_word(program, i);
-
-		//TODO: Big-endian, but SimpleRisc should be little-endian, fix!
-		processor->mem[offset    ] = (instruction >> 24) & 0xFF;
-		processor->mem[offset + 1] = (instruction >> 16) & 0xFF;
-		processor->mem[offset + 2] = (instruction >> 8) & 0xFF;
-		processor->mem[offset + 3] = instruction & 0xFF;
+		store_word(processor->mem + i * sizeof(word), instruction);
 	}
 
-	processor->mem[program->size * n] = 0xFF; //TODO: Program end
+	store_word(processor->mem + program->size * sizeof(word), END_PROGRAM);
 }
 
-word fetch_instruction(const struct Processor *p) {
-	word instruction = (word)p->mem[p->pc] << 24;
-	instruction |= (word)p->mem[p->pc + 1] << 16;
-	instruction |= (word)p->mem[p->pc + 2] << 8;
-	instruction |= (word)p->mem[p->pc + 3];
+word load_word(const uint8_t *memory) {
+	word instruction = (word)*memory;
+	instruction |= (word)*(memory + 1) << 8;
+	instruction |= (word)*(memory + 2) << 16;
+	instruction |= (word)*(memory + 3) << 24;
 	return instruction;
+}
+
+void store_word(uint8_t *memory, word w) {
+	*(memory + 3) = (w >> 24) & 0xFF;
+	*(memory + 2) = (w >> 16) & 0xFF;
+	*(memory + 1) = (w >> 8) & 0xFF;
+	*(memory + 0) = w & 0xFF;
 }
 
 void decode_instruction(word instruction, struct DecodedInstruction *result){

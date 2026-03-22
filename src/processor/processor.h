@@ -19,12 +19,12 @@ struct Processor {
 };
 
 struct DecodedInstruction {
-	word opcode;
-	word opcode_i_bit;
 	uint8_t dst_reg;
 	uint8_t src_reg_1;
 	uint8_t src_reg_2;
 	bool is_immediate;
+	word opcode;
+	word opcode_i_bit;
 	word imm_val;
 	word offset;
 };
@@ -35,7 +35,9 @@ void run_processor(struct Processor * const processor);
 
 void load_program_from_mem(struct vec_word *program, struct Processor * const processor);
 
-word fetch_instruction(const struct Processor*);
+word load_word(const uint8_t *memory);
+
+void store_word(uint8_t *memory, word);
 
 void decode_instruction(word instruction, struct DecodedInstruction *result);
 
