@@ -118,6 +118,7 @@ struct CompileError encode_instruction_one_arg(word *instruction_with_opcode, wo
 		return status;
 	}
 	offset &= ONE_ARG_MASK;
+	*instruction_with_opcode &= (~ONE_ARG_MASK); //clear any previous offset
 	*instruction_with_opcode |= offset;
 	status.error_code = COMPILE_SUCCESS;
 	return status;
@@ -344,9 +345,9 @@ int resolve_labels(struct vec_word *out_program, struct vec_LabelEntry *label_ta
 			word from = *vec_at_word(&e->jumps, j);
 			word to = e->location;
 			word diff = to - from;
-			word instruction = *vec_at_word(out_program, from);
-			encode_instruction_one_arg(&instruction, diff);
-			*vec_at_word(out_program, from) = instruction;
+			word *instruction = vec_at_word(out_program, from);
+			encode_instruction_one_arg(instruction, diff);
+			//*vec_at_word(out_program, from) = instruction;
 		}
 	}
 	return COMPILE_SUCCESS;
