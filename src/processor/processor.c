@@ -123,18 +123,36 @@ void run_processor(struct Processor * const p) {
 		} break;
 		}
 
-		switch (di.opcode) {
+
 		/* 2 args instructions*/
+		switch (di.opcode_i_bit) {
+		case CMP_OPCODE | I_BIT_MASK:
+			p->flag_E = di.src_reg_1 == di.imm_val;
+			p->flag_GT = di.src_reg_1 > di.imm_val;
+			break;
 		case CMP_OPCODE:
+			p->flag_E = di.src_reg_1 == p->reg[di.imm_val];
+			p->flag_GT = di.src_reg_1 > p->reg[di.imm_val];
 			break;
 
+		case NOT_OPCODE | I_BIT_MASK:
+			p->reg[di.dst_reg] = ~di.imm_val;
+			break;
 		case NOT_OPCODE:
+			p->reg[di.dst_reg] = ~p->reg[di.imm_val];
 			break;
 
-		case MOV_OPCODE:
+
+		case MOV_OPCODE | I_BIT_MASK:
+			p->reg[di.dst_reg] = di.imm_val;
 			break;
+		case MOV_OPCODE:
+			p->reg[di.dst_reg] = p->reg[di.imm_val];
+			break;
+		}
 
 		/* 1 arg instruction */
+		switch (di.opcode) {
 		case CALL_OPCODE:
 			break;
 
@@ -247,6 +265,10 @@ void disassembly(word instruction, char *buf) {
 	switch (args_num) {
 	case 1: {
 		sprintf(buf, "%s %d\n", inst_name, di.offset);
+	} break;
+	case 2: {
+		const char* fmt = di.is_immediate ? "%s r%d, %d\n" : "%s r%d, r%d\n";
+		sprintf(buf, fmt, inst_name, di.opcode == CMP_OPCODE ? di.src_reg_1 : di.dst_reg, di.imm_val);
 	} break;
 	case 3: {
 		const char* fmt = di.is_immediate ? "%s r%d, r%d, %d\n" : "%s r%d, r%d, r%d\n";

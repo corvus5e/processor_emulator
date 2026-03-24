@@ -50,6 +50,8 @@ struct CompileError encode_instruction(struct InstructionInfo *instruction, arg_
 
 struct CompileError encode_instruction_one_arg(word *instruction_with_opcode, word offset);
 
+struct CompileError encode_instruction_two_arg(word *instruction_with_opcode, bool is_immediate, arg_values_array out_args);
+
 struct CompileError encode_instruction_three_arg(word *instruction_with_opcode, bool is_immediate, arg_values_array out_args);
 
 /*

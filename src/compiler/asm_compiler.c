@@ -94,18 +94,31 @@ struct CompileError encode_instruction(struct InstructionInfo *instruction, arg_
 	switch (instruction->args_num) {
 		case 0: break;
 		case 1: return encode_instruction_one_arg(result, args[0]);
-		case 2: break;
-		case 3: {
-			if(instruction->code == LD_OPCODE || instruction->code == ST_OPCODE) {
-				//NOTE: for st and ld instruction we should swap imm and src_reg_1
-				//      as format is `ld r1, 10[r2]` and `st r1, 10[r2]`
-				SWAP(enum InstructionArgType, instruction->arg_types[1], instruction->arg_types[2]);
-				SWAP(int , args[1], args[2]);
+		case 2: {
+			// NOTE: 2-arg instructions will be encoded in the same
+			//       format as 3-arg, but one register remains empty,
+			//       so putting immediate or second register in the
+			//       third place
+			SWAP(int, args[1], args[2]);
+			if (instruction->code == CMP_OPCODE) {
+				// NOTE: CMP is special - destination reg is
+				//       empty, reg to compare is placed on the second place
+				SWAP(int, args[0], args[1]);
 			}
+			bool is_immediate = instruction->arg_types[1] == IMMEDIATE;
+			return encode_instruction_two_arg(result, is_immediate, args);
+		} 
+		case 3: {
 			bool is_immediate = instruction->arg_types[2] == IMMEDIATE;
+			if (instruction->code == LD_OPCODE || instruction->code == ST_OPCODE) {
+				// NOTE: for st and ld instruction we should
+				// swap imm and src_reg_1 as format is `ld r1, 10[r2]` and `st r1, 10[r2]`
+				SWAP(int, args[1], args[2]);
+				is_immediate = instruction->arg_types[1] == IMMEDIATE;
+			}
 
 			return encode_instruction_three_arg(result, is_immediate, args);
-		};
+		}
 	}
 	status.error_code = COMPILE_SUCCESS;
 	return status;
@@ -121,6 +134,22 @@ struct CompileError encode_instruction_one_arg(word *instruction_with_opcode, wo
 	*instruction_with_opcode &= (~ONE_ARG_MASK); //clear any previous offset
 	*instruction_with_opcode |= offset;
 	status.error_code = COMPILE_SUCCESS;
+	return status;
+}
+struct CompileError encode_instruction_two_arg(word *instruction_with_opcode, bool is_immediate, arg_values_array args) {
+	//NOTE: For 2-args instruction second parameter is placed in imeediate field no
+	//      matter if it immediate or number of register, so it should be packed
+	//      as immediate 3-arg instruction, but preserve I-bit
+	struct CompileError status = {.error_code = COMPILE_SUCCESS, .msg = "Bad encode_instruction_three_arg call"};
+	if(is_immediate) {
+		*instruction_with_opcode |= I_BIT_MASK;
+	}
+
+	//TODO: What with modifiers bif, for now default is used
+	//TODO: Handle for regs to be < 16 during parsing stage
+	*instruction_with_opcode |= (args[0] & 0x0000000F) << DST_REG_SHIFT;
+	*instruction_with_opcode |= (args[1] & 0x0000000F) << SRC_REG_1_SHIFT;
+	*instruction_with_opcode |= (args[2] & 0x0000FFFF);
 	return status;
 }
 

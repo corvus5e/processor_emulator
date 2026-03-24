@@ -8,4 +8,7 @@ b .label
 add r7, r7, 20 #r7 = 20
 .label:
 add r7, r7, 40 #r7 = 40
+mov r8, 11     #r8 = 11
+mov r9, r1     #r9 = r1 = -27
+cmp r9, -26    # E = 0, GT = 1
 

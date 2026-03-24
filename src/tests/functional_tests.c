@@ -34,6 +34,10 @@ TEST(sample)
 	EXPECT_EQ(p.reg[6], -13)
 	EXPECT_EQ(load_word(p.mem + 120), p.reg[6]);
 	EXPECT_EQ(p.reg[7], 40);
+	EXPECT_EQ(p.reg[8], 11);
+	EXPECT_EQ(p.reg[9], p.reg[1]);
+	EXPECT_EQ(p.flag_E, 0);
+	EXPECT_EQ(p.flag_GT, 1);
 	return TEST_PASSED;
 }
 
