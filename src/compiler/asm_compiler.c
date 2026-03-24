@@ -107,7 +107,7 @@ struct CompileError encode_instruction(struct InstructionInfo *instruction, arg_
 			}
 			bool is_immediate = instruction->arg_types[1] == IMMEDIATE;
 			return encode_instruction_two_arg(result, is_immediate, args);
-		} 
+		}
 		case 3: {
 			bool is_immediate = instruction->arg_types[2] == IMMEDIATE;
 			if (instruction->code == LD_OPCODE || instruction->code == ST_OPCODE) {
