@@ -36,80 +36,70 @@ void run_processor(struct Processor * const p) {
 			p->reg[di.dst_reg] = p->reg[di.src_reg_1] + di.imm_val;
 			break;
 		case ADD_OPCODE:
-			p->reg[di.dst_reg] =
-			    p->reg[di.src_reg_1] + p->reg[di.src_reg_2];
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] + p->reg[di.src_reg_2];
 			break;
 
 		case SUB_OPCODE | I_BIT_MASK:
 			p->reg[di.dst_reg] = p->reg[di.src_reg_1] - di.imm_val;
 			break;
 		case SUB_OPCODE:
-			p->reg[di.dst_reg] =
-			    p->reg[di.src_reg_1] - p->reg[di.src_reg_2];
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] - p->reg[di.src_reg_2];
 			break;
 
 		case MUL_OPCODE | I_BIT_MASK:
 			p->reg[di.dst_reg] = p->reg[di.src_reg_1] * di.imm_val;
 			break;
 		case MUL_OPCODE:
-			p->reg[di.dst_reg] =
-			    p->reg[di.src_reg_1] * p->reg[di.src_reg_2];
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] * p->reg[di.src_reg_2];
 			break;
 
 		case DIV_OPCODE | I_BIT_MASK:
 			p->reg[di.dst_reg] = p->reg[di.src_reg_1] / di.imm_val;
 			break;
 		case DIV_OPCODE:
-			p->reg[di.dst_reg] =
-			    p->reg[di.src_reg_1] / p->reg[di.src_reg_2];
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] / p->reg[di.src_reg_2];
 			break;
 
 		case MOD_OPCODE | I_BIT_MASK:
 			p->reg[di.dst_reg] = p->reg[di.src_reg_1] % di.imm_val;
 			break;
 		case MOD_OPCODE:
-			p->reg[di.dst_reg] =
-			    p->reg[di.src_reg_1] % p->reg[di.src_reg_2];
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] % p->reg[di.src_reg_2];
 			break;
 
 		case AND_OPCODE | I_BIT_MASK:
 			p->reg[di.dst_reg] = p->reg[di.src_reg_1] & di.imm_val;
 			break;
 		case AND_OPCODE:
-			p->reg[di.dst_reg] =
-			    p->reg[di.src_reg_1] & p->reg[di.src_reg_2];
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] & p->reg[di.src_reg_2];
 			break;
 
 		case OR_OPCODE | I_BIT_MASK:
 			p->reg[di.dst_reg] = p->reg[di.src_reg_1] | di.imm_val;
 			break;
 		case OR_OPCODE:
-			p->reg[di.dst_reg] =
-			    p->reg[di.src_reg_1] | p->reg[di.src_reg_2];
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] | p->reg[di.src_reg_2];
 			break;
 
 		case LSL_OPCODE | I_BIT_MASK:
 			p->reg[di.dst_reg] = p->reg[di.src_reg_1] << di.imm_val;
 			break;
 		case LSL_OPCODE:
-			p->reg[di.dst_reg] = p->reg[di.src_reg_1]
-					     << p->reg[di.src_reg_2];
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] << p->reg[di.src_reg_2];
 			break;
 
 		case LSR_OPCODE | I_BIT_MASK: // TODO: Mind the sing extension
 			p->reg[di.dst_reg] = p->reg[di.src_reg_1] >> di.imm_val;
 			break;
 		case LSR_OPCODE:
-			p->reg[di.dst_reg] =
-			    p->reg[di.src_reg_1] >> p->reg[di.src_reg_2];
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] >> p->reg[di.src_reg_2];
 			break;
 
 		case ASR_OPCODE | I_BIT_MASK:
 			p->reg[di.dst_reg] = p->reg[di.src_reg_1] >> di.imm_val;
 			break;
 		case ASR_OPCODE:
-			p->reg[di.dst_reg] =
-			    p->reg[di.src_reg_1] >> p->reg[di.src_reg_2];
+			p->reg[di.dst_reg] = p->reg[di.src_reg_1] >> p->reg[di.src_reg_2];
 			break;
 
 		case LD_OPCODE | I_BIT_MASK: {
@@ -127,12 +117,12 @@ void run_processor(struct Processor * const p) {
 		/* 2 args instructions*/
 		switch (di.opcode_i_bit) {
 		case CMP_OPCODE | I_BIT_MASK:
-			p->flag_E = di.src_reg_1 == di.imm_val;
-			p->flag_GT = di.src_reg_1 > di.imm_val;
+			p->flag_E = p->reg[di.src_reg_1] == di.imm_val;
+			p->flag_GT = p->reg[di.src_reg_1] > di.imm_val;
 			break;
 		case CMP_OPCODE:
-			p->flag_E = di.src_reg_1 == p->reg[di.imm_val];
-			p->flag_GT = di.src_reg_1 > p->reg[di.imm_val];
+			p->flag_E = p->reg[di.src_reg_1] == p->reg[di.imm_val];
+			p->flag_GT = p->reg[di.src_reg_1] > p->reg[di.imm_val];
 			break;
 
 		case NOT_OPCODE | I_BIT_MASK:
@@ -164,16 +154,22 @@ void run_processor(struct Processor * const p) {
 			if (p->flag_E) {
 				p->pc += sizeof(word) * di.offset;
 			}
+			else {
+				p->pc += sizeof(word);
+			}
 			break;
 
 		case BGT_OPCODE:
 			if (p->flag_GT) {
 				p->pc += sizeof(word) * di.offset;
 			}
+			else {
+				p->pc += sizeof(word);
+			}
 			break;
 
 		default:
-			p->pc += 4;
+			p->pc += sizeof(word);
 		}
 	}
 }

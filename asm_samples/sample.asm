@@ -10,5 +10,5 @@ add r7, r7, 20 #r7 = 20
 add r7, r7, 40 #r7 = 40
 mov r8, 11     #r8 = 11
 mov r9, r1     #r9 = r1 = -27
-cmp r9, -26    # E = 0, GT = 1
+cmp r9, -28    # E = 0, GT = 1
 

@@ -86,6 +86,20 @@ TEST(exmaple_28_1) // lsl, lsr, asr
 	return TEST_PASSED;
 }
 
+TEST(exmaple_29) // Factorial of a number
+{
+	struct vec_word program;
+	vec_init_word(&program);
+	EXPECT_EQ(compile_program(SAMPLE("example_29.asm"), &program), COMPILE_SUCCESS);
+	struct Processor p = {};
+	load_program_from_mem(&program, &p);
+	p.reg[0] = 5; // Find factorial of 5
+	decode_program(&program);
+	run_processor(&p);
+	EXPECT_EQ(p.reg[1], 120);
+	return TEST_PASSED;
+}
+
 
 int main() {
 	return test_at_home_run();

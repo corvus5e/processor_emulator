@@ -28,4 +28,4 @@ The Chapter 3 introduces the SimpleRisc ISA for 32-bit processor
 - [ ] Go back to loading 32 bit number into a register and modifiers (Chapter 3)
 - [ ] Generate additional instructions while compilation to deal with immediate larger than 16 bits using modifiers
 - [ ] Add tests for these modifiers
-- [ ] Add examples 29, 30, 31
+- [ ] Add examples 30, 31
