@@ -76,7 +76,7 @@ void add_lable_jump(const char *name, size_t len, word jump_from);
 /* Replaces labels with needed addresses for jmp instructions in compiled program
  * Returns 1 if succeeded, 0 otherwise
  * */
-int resolve_labels(struct vec_word *out_program, struct vec_LabelEntry *label_table);
+struct CompileError resolve_labels(struct vec_word *out_program, struct vec_LabelEntry *label_table);
 
 /* Finds a label with `name` in `label_table`.
  * Returns NULL is not found.

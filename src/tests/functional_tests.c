@@ -100,6 +100,24 @@ TEST(exmaple_29) // Factorial of a number
 	return TEST_PASSED;
 }
 
+TEST(exmaple_30) // Is number prime
+{
+	struct vec_word program;
+	vec_init_word(&program);
+	EXPECT_EQ(compile_program(SAMPLE("example_30.asm"), &program), COMPILE_SUCCESS);
+	decode_program(&program);
+
+	struct Processor p = {};
+	load_program_from_mem(&program, &p);
+
+	p.reg[1] = 5; // Is 5 prime ?
+	run_processor(&p);
+
+	EXPECT_EQ(p.reg[0], 1);
+	return TEST_PASSED;
+}
+
+
 
 int main() {
 	return test_at_home_run();

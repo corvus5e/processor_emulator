@@ -81,7 +81,14 @@ int compile_program(const char *file_name, struct vec_word *program)
 	//vec_push_back_word(program, -1); //TODO: MOVE EXIT_PROGRAM to accessible place
 	print_label_table(&label_table);
 
-	return resolve_labels(program, &label_table);
+	status = resolve_labels(program, &label_table);
+
+	if(status.error_code == COMPILE_ERROR) {
+		fprintf(stderr, "Error while resolving labels: %s\n", status.msg);
+		return COMPILE_ERROR;
+	}
+
+	return status.error_code;
 }
 
 struct CompileError encode_instruction(struct InstructionInfo *instruction, arg_values_array args, word *result) {
@@ -359,15 +366,18 @@ void unget_token(struct Token t) {
 	token_buf[token_free_pos++] = t;
 }
 
-int resolve_labels(struct vec_word *out_program, struct vec_LabelEntry *label_table) {
+struct CompileError resolve_labels(struct vec_word *out_program, struct vec_LabelEntry *label_table) {
+	struct CompileError status = {.error_code = COMPILE_ERROR};
 	for(int i = 0; i < label_table->size; ++i) {
 		LabelEntry *e = vec_at_LabelEntry(label_table, i);
 		if(e->location < 0) {
-			return COMPILE_ERROR;
+			status.msg = "Label is not declared!"; //TODO: Add name to msg
+			return status;
 		}
 
 		if(e->location >= 0 && vec_empty_word(&e->jumps)) {
-			return COMPILE_ERROR;
+			status.msg = "Label is not used";
+			return status;
 		}
 
 		for(int j = 0; j < e->jumps.size; ++j) {
@@ -379,7 +389,8 @@ int resolve_labels(struct vec_word *out_program, struct vec_LabelEntry *label_ta
 			//*vec_at_word(out_program, from) = instruction;
 		}
 	}
-	return COMPILE_SUCCESS;
+	status.error_code = COMPILE_SUCCESS;
+	return status;
 }
 
 int strntoi(const char *s, int n, int *out) {
