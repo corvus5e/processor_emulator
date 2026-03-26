@@ -117,7 +117,23 @@ TEST(exmaple_30) // Is number prime
 	return TEST_PASSED;
 }
 
+TEST(exmaple_31) // Least common multiple
+{
+	struct vec_word program;
+	vec_init_word(&program);
+	EXPECT_EQ(compile_program(SAMPLE("example_31.asm"), &program), COMPILE_SUCCESS);
+	decode_program(&program);
 
+	struct Processor p = {};
+	load_program_from_mem(&program, &p);
+
+	p.reg[1] = 9; // LCM of 9 and 12
+	p.reg[2] = 12;
+	run_processor(&p);
+
+	EXPECT_EQ(p.reg[0], 36);
+	return TEST_PASSED;
+}
 
 int main() {
 	return test_at_home_run();

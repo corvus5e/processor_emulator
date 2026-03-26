@@ -1,7 +1,7 @@
 # Simple processor emulator
 
-This simple processor emulator is intended to help create and test own ISA for  
-Chapter 1 exercises in 'Basic Computer Architecture' by Smruti R Sarangi.
+Simple processor emulator with SimpleRISC ISA as an exercise 
+to Chapter 1-3 of 'Basic Computer Architecture' by Smruti R Sarangi.
 
 ## SimpleRisc and it's ASM description (from Chapter 3 (3.3.2) )
 SimpleRisc assembly follows GNU assembly format  
@@ -23,9 +23,8 @@ The Chapter 3 introduces the SimpleRisc ISA for 32-bit processor
 - [ ] Migrate to 32-bit word
 
 ### Local TODO:
-- [ ] Decode 2 args instruction
 - [ ] Add call and ret functions (page 114)
 - [ ] Go back to loading 32 bit number into a register and modifiers (Chapter 3)
 - [ ] Generate additional instructions while compilation to deal with immediate larger than 16 bits using modifiers
 - [ ] Add tests for these modifiers
-- [ ] Add examples 31
+- [ ] Add examples 32, 33, 34
