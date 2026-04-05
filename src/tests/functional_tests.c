@@ -161,9 +161,9 @@ TEST(exmaple_34) // Recursive factorial
 	struct Processor p = {};
 	load_program_from_mem(&program, &p);
 
-	//run_processor(&p);
+	run_processor(&p);
 
-	//EXPECT_EQ(p.reg[3], 18);
+	EXPECT_EQ(p.reg[1], 3628800); // result of factorial of 10
 	return TEST_PASSED;
 }
 

@@ -182,6 +182,8 @@ void load_program_from_mem(struct vec_word *program, struct Processor * const pr
 	for(int i = 0; i < REG_COUNT; ++i)
 		processor->reg[i] = 0;
 
+	processor->reg[SP] = MEM_LEN;
+
 	for(int i = 0; i < program->size; ++i) {
 		word instruction = *vec_at_word(program, i);
 		store_word(processor->mem + i * sizeof(word), instruction);
