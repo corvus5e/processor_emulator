@@ -82,7 +82,7 @@ static struct InstructionInfo asm_info[] = {
 
 	{"call", 1, {LOCATION},                       CALL_OPCODE},
 
-	{"ret",  1, {LOCATION},                       RET_OPCODE},
+	{"ret",  0, {NONE},                           RET_OPCODE},
 
 
 	// {"sbn",  3, {REGISTER,IMMEDIATE,LOCATION}, 29}, // sbn_im

@@ -21,7 +21,10 @@
 #undef T
 
 /* Global label table*/
-struct vec_LabelEntry label_table;
+static struct vec_LabelEntry label_table;
+
+/* Separators list */
+static char* separators = "[]#, \t\n";
 
 void print_label_table(struct vec_LabelEntry *label_table);
 
@@ -53,7 +56,7 @@ int compile_program(const char *file_name, struct vec_word *program)
 			continue;
 		}
 
-		if (isLabel(t.str, t.len)) {
+		if (is_declared_label(t.str, t.len)) {
 			if ((status = declare_label(t.str, t.len-1, instruction_num))
 				.error_code == COMPILE_SUCCESS)
 				continue;
@@ -190,28 +193,9 @@ struct CompileError parse_line(const char *line_text, struct InstructionInfo **f
 		return status;
 	}
 
-	// Now we should parse arguments
-	search_pattern.args_num = 0;
-	struct CompileError status;
-	for (; search_pattern.args_num < 3; ++search_pattern.args_num) {
-		if ((status = parse_arg(&curr_pos,
-					search_pattern.arg_types + search_pattern.args_num,
-					out_args + search_pattern.args_num, instruction_num))
-			.error_code == COMPILE_ERROR) {
-			return status;
-		}
-		if ((t = get_token(&curr_pos)).type == NEW_LINE || t.type == COMMENT) {
-			unget_token(t);
-			break; // All argument parsed
-		} else if(t.type == LBRACKET) {
-			unget_token(t); // that might be at_register arg
-		} else if(t.type != COMMA) {
-			struct CompileError status = {
-			    .error_code = COMPILE_ERROR,
-			    .msg	= "Expected comma or end of line",
-			    .column = curr_pos - line_text};
-			return status;
-		}
+	struct CompileError status = parse_arguments(&curr_pos, &search_pattern, out_args, instruction_num);
+	if(status.error_code != COMPILE_SUCCESS) {
+		return status;
 	}
 
 	// Find instruction again with all parsed arguments
@@ -222,75 +206,136 @@ struct CompileError parse_line(const char *line_text, struct InstructionInfo **f
 		return status;
 	}
 
-	if((t = get_token(&curr_pos)).type != NEW_LINE && t.type != COMMENT) {
-		status.error_code = COMPILE_ERROR;
-		status.msg = "Too many arguments. Expected end of line";
-		status.column = curr_pos - line_text;
-	}
-
 	return status;
 }
 
-struct CompileError parse_arg(const char **curr_pos, enum InstructionArgType *out_type, int* out_value, int line_num) {
-	struct CompileError status = {.error_code = COMPILE_ERROR, .msg = ""};
-	struct Token t = get_token(curr_pos);
-	if (t.type == NEW_LINE) {
-		status.msg = "Unexpected end of line. Expected argument.";
-		return status;
+struct CompileError parse_arguments(const char **curr_pos, struct InstructionInfo *instruction, arg_values_array out_value, int instruction_num) {
+	struct CompileError status = {.error_code = COMPILE_ERROR};
+
+	struct Token t;
+	int reg, imm;
+	int i = 0;
+
+	for (; i < 3 ;) {
+		t = get_token(curr_pos);
+
+		if(is_used_label(t.str, t.len)) {
+			add_lable_jump(t.str, t.len, instruction_num);
+			instruction->arg_types[i] = LOCATION;
+			i += 1;
+		}
+		else if(parse_reg(&t, &reg)) {
+			instruction->arg_types[i] = REGISTER;
+			out_value[i] = reg;
+			i += 1;
+		}
+		else if(parse_at_imm(&t, &imm, &reg)) {
+			instruction->arg_types[i] = IMMEDIATE;
+			instruction->arg_types[i+1] = AT_REGISTER;
+			out_value[i] = imm;
+			out_value[i+1] = reg;
+			i += 2;
+		}
+		else if(parse_imm(&t, &imm)) {
+			instruction->arg_types[i] = IMMEDIATE;
+			out_value[i] = imm;
+			i += 1;
+		}
+		else if(t.type == NEW_LINE || t.type == COMMENT) {
+			instruction->arg_types[i] = NONE;
+			break;
+		}
+		else {
+			status.msg = "Unknow agrument format";
+			return status;
+		}
+	
+		t = get_token(curr_pos);
+
+		if(t.type == NEW_LINE || t.type == COMMENT)
+			break;
+
+		if(t.type != COMMA) {
+			status.msg = "Expected comma after and the argument";
+			return status;
+		}
 	}
 
-	if(t.type == LBRACKET) {
-		if((t = get_token(curr_pos)).type != WORD) {
-			status.msg = "Failed to parse at registet argument. Expected register after '['";
-			return status;
-		}
-		if (t.str[0] != 'r') {
-			status.msg = "Failed to parse at registet argument. Not a register";
-			return status;
-		}
-		if (!strntoi(t.str + 1, t.len - 1, out_value)) {
-			status.msg = "Failed to parse register argument";
-			return status;
-		}
-		*out_type = AT_REGISTER;
-
-		if ((t = get_token(curr_pos)).type != RBRACKET) {
-			status.msg = "Expected closing bracket ']'";
-			return status;
-		}
-	}
-
-	if(t.type == WORD) {
-		if(isdigit(t.str[0]) || t.str[0] == '-') {
-			if (!strntoi(t.str, t.len, out_value)) {
-				status.msg = "Failed to parse immediate argument";
-				return status;
-			}
-			*out_type = IMMEDIATE;
-		} else if (t.str[0] == 'r') {
-			if (!strntoi(t.str + 1, t.len - 1, out_value)) {
-				status.msg = "Failed to parse register argument";
-				return status;
-			}
-			*out_type = REGISTER;
-		} else {
-			add_lable_jump(t.str, t.len, line_num);
-			*out_type = LOCATION;
-		}
-	}
+	instruction->args_num = i;
 
 	status.error_code = COMPILE_SUCCESS;
 	return status;
 }
 
-bool isLabel(const char *word, size_t len) {
+bool parse_reg(const struct Token* t, int* out_reg_number) {
+	if(t->len < 2) {
+		return false;
+	}
+	if (t->str[0] == 's' && t->str[1] == 'p') {
+		*out_reg_number = SP;
+		return true;
+	}
+
+	if (t->str[0] == 'r' && t->str[1] == 'a') {
+		*out_reg_number = RA;
+		return true;
+	}
+
+	if (t->str[0] != 'r') {
+		return false;
+	}
+
+	if (!strntoi(t->str + 1, t->len - 1, out_reg_number)) {
+		return false;
+	}
+
+	return true;
+}
+
+bool parse_imm(const struct Token *t, int* out_immediate) {
+	return strntoi(t->str, t->len, out_immediate);
+}
+
+bool parse_at_imm(const struct Token *t, int* out_immediate, int* out_reg_number) {
+	const char *curr_pos = t->str;
+	struct Token sub_token = get_token_sb(&curr_pos);
+	if(sub_token.type == LBRACKET) {
+		*out_immediate = 0;
+		unget_token(sub_token);
+	}
+	else if(!parse_imm(&sub_token, out_immediate)) {
+		return false;
+	}
+	
+	if((sub_token = get_token_sb(&curr_pos)).type != LBRACKET) {
+		return false;
+	}
+
+	sub_token = get_token_sb(&curr_pos);
+
+	if(!parse_reg(&sub_token, out_reg_number)) {
+		return false;
+	}
+
+	if((sub_token = get_token_sb(&curr_pos)).type != RBRACKET) {
+		return false;
+	}
+
+	return true;
+}
+
+bool is_declared_label(const char *word, size_t len) {
 	return word[0] == '.' && word[len-1] == ':' && len > 2;
+}
+
+bool is_used_label(const char *word, size_t len) {
+	return word[0] == '.' && len > 1;
 }
 
 struct Token token_buf[50];
 int token_free_pos = 0;
 
-struct Token get_token(const char **text) {
+struct Token get_token_until_separator(const char **text, char *separators) {
 	if (token_free_pos > 0) {
 		return token_buf[--token_free_pos];
 	}
@@ -298,64 +343,32 @@ struct Token get_token(const char **text) {
 	struct Token token = {0, STR_END, NULL};
 
 	// Skip spaces
-	for(;text && *text && **text != '\0' && **text != '\n' && isspace(**text); ++(*text))
+	for(; **text && **text != '\n' && isspace(**text); ++(*text))
 		;
 
 	token.str = *text;
-
-	if(**text == ',') {
-		token.type = COMMA;
+	
+	if(is_char_in_str(**text, separators)) {
+		token.type = **text;
 		token.len = 1;
 		++(*text); // Move to next char
-		return token;
+	} else {
+		token.type = WORD;
+		// Count the length of the word
+		for (; **text && !is_char_in_str(**text, separators); ++(*text), ++token.len)
+			;
 	}
 
-	if(**text == '\n') {
-		token.type = NEW_LINE;
-		token.len = 1;
-		++(*text); // Move to next char
-		return token;
-	}
+	return token;
 
-	if(**text == '#') {
-		token.type = COMMENT;
-		token.len = 1;
-		++(*text); // Move to next char
-		return token;
-	}
+}
 
-	if(**text == '[') {
-		token.type = LBRACKET;
-		token.len = 1;
-		++(*text); // Move to next char
-		return token;
-	}
+struct Token get_token(const char **curr_pos) {
+	return get_token_until_separator(curr_pos, separators + 2);
+}
 
-	if(**text == ']') {
-		token.type = RBRACKET;
-		token.len = 1;
-		++(*text); // Move to next char
-		return token;
-	}
-
-	if(**text == '\0') {
-		token.type = STR_END;
-		token.len = 0;
-		return token;
-	}
-
-	token.type = WORD;
-
-	//Count the length of the word
-        for (; text && *text && **text != '\0' &&
-		!isspace(**text) &&
-               **text != ',' &&
-	       **text != '[' && **text != ']' &&
-	       **text != '#';
-             ++(*text), ++token.len)
-          ;
-
-        return token;
+struct Token get_token_sb(const char **curr_pos) {
+	return get_token_until_separator(curr_pos, separators);
 }
 
 void unget_token(struct Token t) {
@@ -375,9 +388,8 @@ struct CompileError resolve_labels(struct vec_word *out_program, struct vec_Labe
 			return status;
 		}
 
-		if(e->location >= 0 && vec_empty_word(&e->jumps)) {
-			status.msg = "Label is not used";
-			return status;
+		if(e->location >= 0 && vec_empty_word(&e->jumps)) { // Label is not used
+			break;
 		}
 
 		for(int j = 0; j < e->jumps.size; ++j) {
@@ -386,14 +398,13 @@ struct CompileError resolve_labels(struct vec_word *out_program, struct vec_Labe
 			word diff = to - from;
 			word *instruction = vec_at_word(out_program, from);
 			encode_instruction_one_arg(instruction, diff);
-			//*vec_at_word(out_program, from) = instruction;
 		}
 	}
 	status.error_code = COMPILE_SUCCESS;
 	return status;
 }
 
-int strntoi(const char *s, int n, int *out) {
+bool strntoi(const char *s, int n, int *out) {
 	static char buf[50]; //Should be enough
 
 	strncpy(buf, s, n);
@@ -402,9 +413,15 @@ int strntoi(const char *s, int n, int *out) {
 	errno = 0;
 	*out = strtol(buf, &end, 0);
 	if(end == buf || errno == ERANGE) {
-		return 0;
+		return false;
 	}
-	return 1;
+	return true;
+}
+
+bool is_char_in_str(const char c, const char *str) {
+	for(;*str && c != *str; ++str)
+		;
+	return *str;
 }
 
 struct InstructionInfo* find_instruction_info(struct InstructionInfo instruction)

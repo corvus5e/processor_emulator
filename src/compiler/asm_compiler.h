@@ -17,13 +17,13 @@
 struct vec_LabelEntry;
 
 enum TokenType {
-	WORD,
-	COMMA,
-	LBRACKET, //[
-	RBRACKET, //]
-	NEW_LINE,
-	COMMENT,
-	STR_END,
+	WORD	 = 1,
+	COMMA	 = ',',
+	LBRACKET = '[',
+	RBRACKET = ']',
+	NEW_LINE = '\n',
+	COMMENT	 = '#',
+	STR_END	 = '\0',
 };
 
 struct Token {
@@ -59,9 +59,17 @@ struct CompileError encode_instruction_three_arg(word *instruction_with_opcode, 
  * */
 struct CompileError parse_line(const char *line_text, struct InstructionInfo **found_instruction, arg_values_array out_args, int instruction_num);
 
-struct CompileError parse_arg(const char **curr_pos, enum InstructionArgType *out_type, int* out_value, int line_num);
+struct CompileError parse_arguments(const char **curr_pos, struct InstructionInfo *instruction, arg_values_array out_value, int instruction_num);
 
-bool isLabel(const char *word, size_t len);
+bool parse_reg(const struct Token*, int* out_reg_number);
+
+bool parse_imm(const struct Token*, int* out_immediate);
+
+bool parse_at_imm(const struct Token*, int* out_immediate, int* out_reg_number);
+
+bool is_declared_label(const char *word, size_t len);
+
+bool is_used_label(const char *word, size_t len);
 
 /* Returns `struct InstructionInfo*` using `instruction` 'WHERE' clause.
  * Returns NULL if no such instruction found.
@@ -87,12 +95,18 @@ LabelEntry* add_label(const char *name, size_t len);
 
 struct Token get_token(const char **curr_pos);
 
+/* The same as get_token, but extends separators with Square Bracket */
+struct Token get_token_sb(const char **curr_pos);
+
 void unget_token(struct Token);
 
 /* Converts `n` chars of string `s` to a number that fits char
  * Returns 1 is succeed to convert and stores result in `out`,
  * otherwise returns 0
  * */
-int strntoi(const char *s, int n, int *out);
+bool strntoi(const char *s, int n, int *out);
+
+/* `str` is a null-terminated string */
+bool is_char_in_str(const char c, const char *str);
 
 #endif

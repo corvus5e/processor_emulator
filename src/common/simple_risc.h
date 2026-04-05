@@ -7,6 +7,11 @@ typedef int32_t word;
 
 #define WORD_LEN 32
 
+#define REG_COUNT 16
+#define RA 15                   // number of "Return Address" register
+#define SP 14                   // number of "Stack Pointer" register
+#define MEM_LEN (1024)
+
 #define OPCODE_SHIFT 27
 #define DST_REG_SHIFT 22
 #define SRC_REG_1_SHIFT 18

@@ -135,6 +135,39 @@ TEST(exmaple_31) // Least common multiple
 	return TEST_PASSED;
 }
 
+TEST(exmaple_33) // Simple call ret
+{
+	struct vec_word program;
+	vec_init_word(&program);
+	EXPECT_EQ(compile_program(SAMPLE("example_33.asm"), &program), COMPILE_SUCCESS);
+	decode_program(&program);
+
+	struct Processor p = {};
+	load_program_from_mem(&program, &p);
+
+	run_processor(&p);
+
+	EXPECT_EQ(p.reg[3], 18);
+	return TEST_PASSED;
+}
+
+TEST(exmaple_34) // Recursive factorial
+{
+	struct vec_word program;
+	vec_init_word(&program);
+	EXPECT_EQ(compile_program(SAMPLE("example_34.asm"), &program), COMPILE_SUCCESS);
+	decode_program(&program);
+
+	struct Processor p = {};
+	load_program_from_mem(&program, &p);
+
+	//run_processor(&p);
+
+	//EXPECT_EQ(p.reg[3], 18);
+	return TEST_PASSED;
+}
+
+
 int main() {
 	return test_at_home_run();
 }

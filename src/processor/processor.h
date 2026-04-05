@@ -7,9 +7,6 @@
 
 #include <common/simple_risc.h>
 
-#define REG_COUNT 16
-#define MEM_LEN (4 * 1024)
-
 struct Processor {
 	uint8_t mem[MEM_LEN];   // memory
 	word    reg[REG_COUNT]; // registers

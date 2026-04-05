@@ -1,0 +1,43 @@
+# Example 34
+# Write a recursive function to compute the factorial of 10 that is initially stored in r0. Save
+# the result in r1.
+
+# Answer: Let us first take a look at a small C program to compute the factorial of the
+# variable num.
+
+# int factorial(int num) {
+# 	if (num <= 1) return 1;
+# 	return num * factorial(num - 1);
+# }
+#
+# void main() {
+# 	int result = factorial(10);
+# }
+
+	b .main
+
+.factorial:
+	cmp r0, 1       # compare (1,num)
+	beq .return
+	bgt .continue
+	b .return
+
+.continue:
+	sub sp, sp, 8   # create space on the stack
+	st r0, [sp]    # push r0 on the stack
+	st ra, 4[sp]    # push the return address register
+	sub r0, r0, 1   # num = num - 1
+	call .factorial # result will be in r1
+	ld r0, [sp]    # pop r0 from the stack
+	ld ra, 4[sp]    # restore the return address
+	mul r1, r0, r1  # factorial(n) = n * factorial(n-1)
+	add sp, sp, 8   # delete the activation block
+	ret
+
+.return:
+	mov r1, 1
+	ret
+
+.main:
+	mov r0, 10
+	call .factorial

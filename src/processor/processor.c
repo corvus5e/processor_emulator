@@ -15,6 +15,7 @@ int init_processor(const char *program, unsigned char len, struct Processor * co
 	for(int i = 0; i < REG_COUNT; ++i)
 		processor->reg[i] = 0;
 
+	processor->reg[SP] = MEM_LEN;
 	processor->pc = 0;
 
 	return 1;
@@ -141,13 +142,16 @@ void run_processor(struct Processor * const p) {
 			break;
 		}
 
-		/* 1 arg instruction */
+		/* 1 and 0 arg instruction */
 		switch (di.opcode) {
 		case CALL_OPCODE:
-			break;
-
+			p->reg[RA] = p->pc + 4;
 		case B_OPCODE:
 			p->pc += sizeof(word) * di.offset;
+			break;
+
+		case RET_OPCODE:
+			p->pc = p->reg[RA];
 			break;
 
 		case BEQ_OPCODE:
