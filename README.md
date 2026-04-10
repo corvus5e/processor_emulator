@@ -20,9 +20,4 @@ Multi-byte data types such as integers are saved in the little endian format.
 
 ## TODO:
 The Chapter 3 introduces the SimpleRisc ISA for 32-bit processor
-- [ ] Migrate to 32-bit word
-
-### Local TODO:
-- [ ] Go back to loading 32 bit number into a register and modifiers (Chapter 3)
-- [ ] Generate additional instructions while compilation to deal with immediate larger than 16 bits using modifiers
-- [ ] Add tests for these modifiers
+- [ ] Add 32 bit immediate code generation for other ALU instructions, now only `mov` implemented

@@ -46,7 +46,12 @@ struct CompileError {
 
 int compile_program(const char *file_name, struct vec_word *program);
 
-struct CompileError encode_instruction(struct InstructionInfo *instruction, arg_values_array out_args, word *out_compiled_instruction);
+/* Return the number of instructions encoded*/
+int compile_instruction(struct InstructionInfo *instruction, arg_values_array args, struct vec_word *out_compiled_instruction);
+
+void encode_and_push(struct InstructionInfo *instruction, arg_values_array args, struct vec_word *out_compiled_instruction);
+
+struct CompileError encode_instruction(struct InstructionInfo *instruction, arg_values_array args, word *out_compiled_instruction);
 
 struct CompileError encode_instruction_one_arg(word *instruction_with_opcode, word offset);
 

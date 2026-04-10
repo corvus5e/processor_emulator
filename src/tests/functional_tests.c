@@ -167,6 +167,24 @@ TEST(exmaple_34) // Recursive factorial
 	return TEST_PASSED;
 }
 
+TEST(exmaple_load_big_int)
+{
+	struct vec_word program;
+	vec_init_word(&program);
+	EXPECT_EQ(compile_program(SAMPLE("load_32_bit_int.asm"), &program), COMPILE_SUCCESS);
+	decode_program(&program);
+
+	struct Processor p = {};
+	load_program_from_mem(&program, &p);
+
+	run_processor(&p);
+
+	printf("0x%x\n", p.reg[0]);
+	EXPECT_EQ(p.reg[0], 0xFB12CDEF);
+	return TEST_PASSED;
+}
+
+
 
 int main() {
 	return test_at_home_run();

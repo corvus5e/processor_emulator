@@ -12,6 +12,8 @@ enum InstructionArgType {
 	REGISTER = 1 << 3,
 };
 
+enum Modifier { DEFAULT = 0, UPPER_HALF = MODIFIERS_BITS_H_MASK, UNSIGNED = MODIFIERS_BITS_U_MASK };
+
 #define MAX_ARGS_NUM 3
 
 typedef enum InstructionArgType arg_types_array[MAX_ARGS_NUM];
@@ -22,6 +24,7 @@ struct InstructionInfo {
 	int args_num;
 	arg_types_array arg_types;
 	word code;
+	enum Modifier modifier;
 };
 
 #define EXIT_PROGRAM -1

@@ -43,7 +43,7 @@ int compile_program(const char *file_name, struct vec_word *program)
 	char *line = NULL;
 	size_t n;
 	ssize_t nread;
-	int instruction_num = 0;
+	int instructions_count = 0;
 	int text_line_num = 1;
 	vec_init_LabelEntry(&label_table);
 	struct InstructionInfo *inst_info;
@@ -57,20 +57,18 @@ int compile_program(const char *file_name, struct vec_word *program)
 		}
 
 		if (is_declared_label(t.str, t.len)) {
-			if ((status = declare_label(t.str, t.len-1, instruction_num))
+			if ((status = declare_label(t.str, t.len-1, instructions_count))
 				.error_code == COMPILE_SUCCESS)
 				continue;
 			else
 				break;
 		}
 
-		status = parse_line(line, &inst_info, arg_value, instruction_num++);
+		status = parse_line(line, &inst_info, arg_value, instructions_count);
 		if (status.error_code == COMPILE_ERROR)
 			break;
-		
-		word encoded_instruction = 0;
-		status = encode_instruction(inst_info, arg_value, &encoded_instruction);
-		vec_push_back_word(program, encoded_instruction);
+
+		instructions_count += compile_instruction(inst_info, arg_value, program);
 	}
 
 	free(line);
@@ -94,12 +92,56 @@ int compile_program(const char *file_name, struct vec_word *program)
 	return status.error_code;
 }
 
+int compile_instruction(struct InstructionInfo *instruction, arg_values_array args, struct vec_word *out_compiled_instruction) {
+	int args_count = instruction->args_num;
+	int imm_arg = args[args_count - 1];
+
+	if (instruction->arg_types[args_count - 1] == IMMEDIATE &&
+	    (imm_arg > (int)MAX_IMMEDIATE || imm_arg < (int)MIN_IMMEDIATE) &&
+	    instruction->code != LSL_OPCODE &&
+	    instruction->code != LSR_OPCODE &&
+	    instruction->code != ASR_OPCODE) {
+		int arg_upper_half = imm_arg >> 16;    // h-modifier
+		int lower_half = imm_arg & 0x0000FFFF; // u-modifier
+
+		//Generate instructions
+		switch(instruction->code) {
+			case MOV_OPCODE: {
+					//TODO: Refactor
+					struct InstructionInfo mov = asm_info[19]; //TODO: Make better
+					mov.modifier = UPPER_HALF;
+					arg_values_array mov_args =  {args[0], arg_upper_half};
+					encode_and_push(&mov, mov_args, out_compiled_instruction);
+
+					struct InstructionInfo add = asm_info[0]; //TODO: Make better
+					arg_values_array add_args =  {args[0], args[0], lower_half};
+					add.modifier = UNSIGNED;
+					encode_and_push(&add, add_args, out_compiled_instruction);
+
+					return 2;
+			}
+		}
+	} else { // non-immediate or immediate argumant fits in 16 bit 2's compement
+		encode_and_push(instruction, args, out_compiled_instruction);
+		return 1;
+	}
+
+	return 0;
+}
+
+void encode_and_push(struct InstructionInfo *instruction, arg_values_array args, struct vec_word *out_compiled_instruction) {
+	word encoded_instruction = 0;
+	encode_instruction(instruction, args, &encoded_instruction);
+	vec_push_back_word(out_compiled_instruction, encoded_instruction);
+}
+
 struct CompileError encode_instruction(struct InstructionInfo *instruction, arg_values_array args, word *result) {
 	struct CompileError status = {.error_code = COMPILE_ERROR, .msg = "Bad encode_instruction call"};
 	if (!instruction || !result) 
 		return status;
 
 	*result = instruction->code;
+	*result |= instruction->modifier;
 
 	switch (instruction->args_num) {
 		case 0: break;
